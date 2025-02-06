@@ -1,0 +1,52 @@
+.settings-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.thresholds-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.threshold-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-speed) var(--transition-easing);
+}
+
+.threshold-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.threshold-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.threshold-symbol {
+  font-weight: 500;
+}
+
+.threshold-details {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: var(--spacing-md);
+  font-size: 13px;
+}
+
+.threshold-item .btn--icon {
+  opacity: 0.6;
+}

@@ -1,0 +1,38 @@
+:root {
+  /* Color Variables */
+  --bg-primary: var(--chrome-primary, #1E1E1E);
+  --bg-secondary: var(--chrome-secondary, #2A2A2A);
+  --text-primary: var(--chrome-text-primary, #F0F0F0);
+  --text-secondary: var(--chrome-text-secondary, #A0A0A0);
+  --accent-positive: var(--chrome-accent-positive, #3ECF8E);
+  --accent-negative: var(--chrome-accent-negative, #E57373);
+  --accent-neutral: var(--chrome-accent-neutral, #7C5DFA);
+  --accent-edit: var(--chrome-accent-edit, #64B5F6);
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  
+  /* Typography */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
+  
+  /* Transitions */
+  --transition-speed: 0.2s;
+  --transition-easing: ease-in-out;
+}

@@ -1,0 +1,38 @@
+.card {
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  transition: transform var(--transition-speed) var(--transition-easing),
+              box-shadow var(--transition-speed) var(--transition-easing);
+}
+
+.card__header {
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card__title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.card__actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.card__content {
+  padding: var(--spacing-md) 0;
+}
+
+/* Keep regular padding for non-settings cards */
+.card:not(.settings-page .card) .card__content {
+  padding: var(--spacing-md);
+}

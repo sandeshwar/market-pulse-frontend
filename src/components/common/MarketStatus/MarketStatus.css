@@ -1,0 +1,37 @@
+.market-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  position: relative;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-secondary);
+}
+
+.status-indicator.open {
+  background-color: var(--accent-positive);
+}
+
+.status-tooltip {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-speed) var(--transition-easing);
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+}
+
+.market-status:hover .status-tooltip {
+  opacity: 1;
+}

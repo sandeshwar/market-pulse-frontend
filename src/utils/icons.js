@@ -1,0 +1,23 @@
+export const ICONS = {
+  trending: 'trending-up',
+  maximize: 'maximize-2',
+  close: 'x',
+  arrowLeft: 'chevron-left',
+  arrowRight: 'chevron-right',
+  search: 'search',
+  moreVertical: 'more-vertical',
+  barChart2: 'bar-chart-2',
+  star: 'star',
+  chevronRight: 'chevron-right',
+  bell: 'bell',
+  dollarSign: 'dollar-sign',
+  monitor: 'monitor',
+  globe: 'globe',
+  clock: 'clock',
+  trendingUp: 'trending-up',
+  trash: 'trash-2',
+  home: 'home',
+  settings: 'settings',
+  list: 'list',
+  edit: 'edit'
+};

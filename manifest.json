@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Market Pulse",
+  "version": "1.0.0",
+  "description": "Real-time market data at your fingertips",
+  "permissions": [
+    "storage",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://*.alphavantage.co/*"
+  ],
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Market Pulse"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

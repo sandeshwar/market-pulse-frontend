@@ -1,0 +1,12 @@
+node_modules
+dist/index.html
+dist/manifest.json
+dist/service-worker-loader.js
+dist/.vite/manifest.json
+dist/assets/index-1o0XvsAU.js
+dist/assets/index-DdemFaHs.css
+dist/assets/service-worker.js-DbodLOs5.js
+dist/icons/icon16.png
+dist/icons/icon48.png
+dist/icons/icon128.png
+src/components/.DS_Store

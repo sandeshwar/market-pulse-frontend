@@ -1,0 +1,35 @@
+.market-indices {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.index-item {
+  position: relative;
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--bg-primary);
+}
+
+.index-item .market-status {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+}
+
+.index-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+  padding-right: var(--spacing-lg);
+}
+
+.index-value {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.index-change {
+  font-size: 12px;
+  margin-top: var(--spacing-xs);
+}

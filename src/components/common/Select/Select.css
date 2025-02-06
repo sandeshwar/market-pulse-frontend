@@ -1,0 +1,32 @@
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-field {
+  width: 100%;
+  padding: var(--spacing-sm);
+  padding-right: calc(var(--spacing-lg) + var(--spacing-sm));
+  background-color: var(--bg-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color var(--transition-speed) var(--transition-easing);
+}
+
+.select-field:focus {
+  outline: none;
+  border-color: var(--accent-neutral);
+}
+
+.select-icon {
+  position: absolute;
+  right: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}

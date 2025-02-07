@@ -5,10 +5,11 @@
   "description": "Real-time market data at your fingertips",
   "permissions": [
     "storage",
-    "sidePanel"
+    "sidePanel",
+    "activeTab"
   ],
   "host_permissions": [
-    "https://*.alphavantage.co/*"
+    "https://*.marketdata.app/*"
   ],
   "action": {
     "default_popup": "index.html",
@@ -20,8 +21,7 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "service_worker": "service-worker.js",
-    "type": "module"
+    "service_worker": "service-worker.js"
   },
   "side_panel": {
     "default_path": "index.html"

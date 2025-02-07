@@ -1,17 +1,8 @@
 // Register the service worker
 export function register() {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker
-        .register('/service-worker.js')
-        .then(registration => {
-          console.log('ServiceWorker registration successful');
-        })
-        .catch(error => {
-          console.error('ServiceWorker registration failed:', error);
-        });
-    });
-  }
+  // Chrome extensions don't support service workers in the traditional way
+  // Service workers are automatically registered via manifest.json
+  console.log('Service worker registration handled by Chrome extension manifest');
 }
 
 // Unregister the service worker
@@ -25,4 +16,4 @@ export function unregister() {
         console.error(error.message);
       });
   }
-} 
+}

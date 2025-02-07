@@ -36,7 +36,7 @@ export function createBreakingNewsCard() {
     {
       title: 'RRR finds a fan in Klaus Mikaelson aka Joseph Morgan: \'Absolute masterpiece\'',
       url: '#',
-      image: 'https://images.unsplash.com/photo-1536440136630-849c177e76a1?auto=format&fit=crop&w=64&h=64&q=80',
+      image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=64&h=64&q=80',
       time: '2d'
     }
   ];

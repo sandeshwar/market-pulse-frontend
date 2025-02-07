@@ -1,5 +1,5 @@
 // Service worker for Market Pulse extension
-const CACHE_NAME = 'market-pulse-v1';
+const CACHE_NAME = 'market-pulse-v2';
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
@@ -26,11 +26,6 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - network first, then cache
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('alphavantage.co')) {
-    // Don't cache API requests
-    return;
-  }
-
   event.respondWith(
     fetch(event.request)
       .catch(() => {

@@ -2,7 +2,6 @@
 import { createExpandedPanel } from './components/ExpandedPanel/ExpandedPanel.js';
 import { initNavigation, navigationHandlers } from './utils/navigation.js';
 import { replaceIcons } from './utils/feather.js';
-import { register as registerServiceWorker } from './serviceWorkerRegistration';
 
 // Initial state
 let isPanelExpanded = false;
@@ -61,9 +60,6 @@ function setupButtonEventListeners() {
     }
   });
 }
-
-// Register service worker
-registerServiceWorker();
 
 // Initialize side panel behavior
 if (chrome.sidePanel) {

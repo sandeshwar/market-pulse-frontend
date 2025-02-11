@@ -18,40 +18,6 @@ const INDEX_NAMES = {
   'VIX': 'VIX',
 };
 
-// Mock data for fallback
-const MOCK_DATA = [
-  {
-    name: 'S&P 500',
-    value: 4927.93,
-    change: 25.61,
-    changePercent: 0.52
-  },
-  {
-    name: 'Dow Jones',
-    value: 38654.42,
-    change: 134.58,
-    changePercent: 0.35
-  },
-  {
-    name: 'NASDAQ',
-    value: 15628.95,
-    change: 78.21,
-    changePercent: 0.50
-  },
-  {
-    name: 'Russell 2000',
-    value: 1998.65,
-    change: -3.26,
-    changePercent: -0.16
-  },
-  {
-    name: 'VIX',
-    value: 13.85,
-    change: -0.26,
-    changePercent: -1.84
-  }
-];
-
 // Default refresh interval (5 minutes)
 export const DEFAULT_REFRESH_INTERVAL = 5 * 60 * 1000;
 
@@ -68,7 +34,6 @@ export class MarketDataService {
   constructor() {
     this.lastUpdateTime = null;
     this.cachedData = null;
-    this.useMockData = false;
     this.providers = {
       marketdataapp: new MarketDataAppProvider(),
     };
@@ -128,10 +93,6 @@ export class MarketDataService {
    */
   async getAvailableIndices() {
     try {
-      if (this.useMockData) {
-        return MOCK_DATA;
-      }
-
       if (!this.activeProvider || !this.activeProvider.isReady()) {
         throw new Error('No active provider configured');
       }
@@ -148,7 +109,7 @@ export class MarketDataService {
       return quotes;
     } catch (error) {
       console.error('MarketDataService error:', error);
-      return MOCK_DATA; // Fallback to mock data instead of Alpha Vantage
+      throw error;
     }
   }
 
@@ -158,14 +119,6 @@ export class MarketDataService {
   clearCache() {
     this.cachedData = null;
     this.lastUpdateTime = null;
-  }
-
-  /**
-   * Enable/disable mock data
-   */
-  setUseMockData(value) {
-    this.useMockData = value;
-    this.clearCache();
   }
 
   /**

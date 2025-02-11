@@ -6,12 +6,7 @@ export class MarketDataAppProvider extends MarketDataProvider {
     this.apiKey = null;
     // Using major index ETFs
     this.symbols = {
-      'DJI': 'Dow Jones',
-      // 'SPY': 'S&P 500',      // S&P 500 ETF
-      // 'DIA': 'Dow Jones',    // Dow Jones ETF
-      // 'QQQ': 'NASDAQ',       // NASDAQ ETF
-      // 'IWM': 'Russell 2000', // Russell 2000 ETF
-      // 'VIX': 'VIX'          // CBOE Volatility Index
+      'DJI': 'Dow Jones'
     };
   }
 

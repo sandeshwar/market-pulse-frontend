@@ -3,13 +3,6 @@
  */
 export const DEFAULT_REFRESH_INTERVAL = 5000;
 
-/**
- * Market data display formats
- */
-export const DISPLAY_FORMATS = {
-  DECIMAL: 'decimal',
-  COMPACT: 'compact'
-};
 
 /**
  * Market status constants

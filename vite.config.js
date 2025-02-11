@@ -26,7 +26,6 @@ export default defineConfig({
       transformMixedEsModules: true,
       include: [
         /node_modules/,
-        /\/@sandeshwar\/market-pulse-backend/
       ]
     }
   },

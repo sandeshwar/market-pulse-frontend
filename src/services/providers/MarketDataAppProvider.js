@@ -1,43 +1,16 @@
-import { MarketDataProvider } from './MarketDataProvider';
+import { MarketDataProvider } from './MarketDataProvider.interface';
 
 export class MarketDataAppProvider extends MarketDataProvider {
   constructor() {
     super();
-    this.apiKey = null;
+    this.apiKey = 'VG1hV1pNclRSeUYtZ2N1S2kyeXhvanBKbloyUTVtVGl6a2VjemNpazFyYz0';
     // Using major index ETFs
     this.symbols = {
       'DJI': 'Dow Jones'
     };
   }
 
-  getName() {
-    return 'MarketData.app';
-  }
-
-  isReady() {
-    return !!this.apiKey;
-  }
-
-  getConfigRequirements() {
-    return [
-      {
-        key: 'apiKey',
-        label: 'API Key',
-        type: 'string',
-        required: true
-      }
-    ];
-  }
-
-  setConfig(config) {
-    this.apiKey = config.apiKey;
-  }
-
   async getMarketIndices() {
-    if (!this.isReady()) {
-      throw new Error('Provider not configured');
-    }
-
     try {
       // Use the correct endpoint for indices
       const symbols = Object.keys(this.symbols).join(',');

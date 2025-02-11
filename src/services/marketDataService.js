@@ -1,25 +1,5 @@
 import { MarketDataAppProvider } from './providers/MarketDataAppProvider';
-
-// List of major market indices we want to track with their symbols
-const MARKET_INDICES = [
-  'SPY',   // S&P 500 ETF
-  'DIA',   // Dow Jones ETF
-  'QQQ',   // NASDAQ ETF
-  'IWM',   // Russell 2000 ETF
-  'VIX',   // Volatility Index
-];
-
-// Map symbols to display names
-const INDEX_NAMES = {
-  'SPY': 'S&P 500',
-  'DIA': 'Dow Jones',
-  'QQQ': 'NASDAQ',
-  'IWM': 'Russell 2000',
-  'VIX': 'VIX',
-};
-
-// Default refresh interval (5 minutes)
-export const DEFAULT_REFRESH_INTERVAL = 5 * 60 * 1000;
+import { DEFAULT_REFRESH_INTERVAL } from '../constants/marketConstants.js';
 
 /**
  * Service class for handling market data operations

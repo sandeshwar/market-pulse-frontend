@@ -3,6 +3,7 @@ import { ICONS } from '../../../utils/icons.js';
 import { createMarketStatus } from '../../common/MarketStatus/MarketStatus.js';
 import { getMarketId } from '../../../utils/marketStatus.js';
 import { marketDataService } from '../../../services/marketDataService.js';
+import { DEFAULT_REFRESH_INTERVAL } from '../../../constants/marketConstants.js';
 
 function createIndexItem({ name, value, change, changePercent }) {
 	// Handle null/undefined values
@@ -118,7 +119,7 @@ export async function createMarketIndicesCard() {
 
 	// Set up auto-refresh if initial load was successful
 	if (cardElement.querySelector('.market-indices:not(.error)')) {
-		refreshInterval = setInterval(updateContent, 5000);
+		refreshInterval = setInterval(updateContent, DEFAULT_REFRESH_INTERVAL);
 	}
 
 	// Add cleanup method to the card

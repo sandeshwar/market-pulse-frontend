@@ -12,21 +12,6 @@ export const DISPLAY_FORMATS = {
 };
 
 /**
- * Common market index symbols
- * These are example symbols - actual symbols will come from user preferences
- */
-export const MARKET_SYMBOLS = {
-  SENSEX: '^BSESN',
-  NIFTY: '^NSEI',
-  SP500: '^GSPC',
-  NASDAQ: '^IXIC',
-  DOW: '^DJI',
-  FTSE: '^FTSE',
-  DAX: '^GDAXI',
-  NIKKEI: '^N225'
-};
-
-/**
  * Market status constants
  */
 export const MARKET_STATUS = {
@@ -45,4 +30,15 @@ export const LOADING_STATES = {
   LOADING: 'loading',
   SUCCESS: 'success',
   ERROR: 'error'
+};
+
+/**
+ * Market indices configuration
+ */
+export const MARKET_INDICES = {
+  'SPY': 'S&P 500',
+  'DIA': 'Dow Jones',
+  'QQQ': 'NASDAQ',
+  'IWM': 'Russell 2000',
+  'VIX': 'VIX',
 };

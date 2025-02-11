@@ -1,19 +1,15 @@
 import { MarketDataProvider } from './MarketDataProvider.interface';
+import { MARKET_INDICES } from '../../constants/marketConstants.js';
 
 export class MarketDataAppProvider extends MarketDataProvider {
   constructor() {
     super();
     this.apiKey = 'VG1hV1pNclRSeUYtZ2N1S2kyeXhvanBKbloyUTVtVGl6a2VjemNpazFyYz0';
-    // Using major index ETFs
-    this.symbols = {
-      'DJI': 'Dow Jones'
-    };
   }
 
   async getMarketIndices() {
     try {
       // Use the correct endpoint for indices
-      const symbols = Object.keys(this.symbols).join(',');
       const response = await fetch(
         `https://api.marketdata.app/v1/indices/quotes/VIX`,
         {
@@ -33,7 +29,7 @@ export class MarketDataAppProvider extends MarketDataProvider {
 
       let quotes = [];
       if (Array.isArray(data)) {
-        quotes = Object.keys(this.symbols).map(symbol => {
+        quotes = Object.keys(MARKET_INDICES).map(symbol => {
           const symbolData = data.find(item => item.symbol === symbol);
           if (!symbolData) {
             console.warn(`No data available for ${symbol}`);
@@ -47,14 +43,14 @@ export class MarketDataAppProvider extends MarketDataProvider {
             return null;
           }
           return {
-            name: this.symbols[symbol],
+            name: MARKET_INDICES[symbol],
             value: price,
             change: change,
             changePercent: changePercent
           };
         });
       } else {
-        quotes = Object.keys(this.symbols).map(symbol => {
+        quotes = Object.keys(MARKET_INDICES).map(symbol => {
           if (!data[symbol]) {
             console.warn(`No data available for ${symbol}`);
             return null;
@@ -68,7 +64,7 @@ export class MarketDataAppProvider extends MarketDataProvider {
             return null;
           }
           return {
-            name: this.symbols[symbol],
+            name: MARKET_INDICES[symbol],
             value: price,
             change: change,
             changePercent: changePercent

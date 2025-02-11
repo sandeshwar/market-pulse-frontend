@@ -3,7 +3,7 @@ import { ICONS } from '../../../utils/icons.js';
 import { createMarketStatus } from '../../common/MarketStatus/MarketStatus.js';
 import { getMarketId } from '../../../utils/marketStatus.js';
 import { marketDataService } from '../../../services/marketDataService.js';
-import { DEFAULT_REFRESH_INTERVAL } from '../../../constants/marketConstants.js';
+import { DEFAULT_REFRESH_INTERVAL, MAX_RETRIES, RETRY_DELAY } from '../../../constants/marketConstants.js';
 
 function createIndexItem({ name, value, change, changePercent }) {
 	// Handle null/undefined values
@@ -62,8 +62,6 @@ export async function createMarketIndicesCard() {
 	let isMounted = true;
 	let refreshInterval;
 	let retryCount = 0;
-	const MAX_RETRIES = 3;
-	const RETRY_DELAY = 2000; // 2 seconds
 
 	// Create initial card with loading state
 	const cardElement = createElementFromHTML(createCard({

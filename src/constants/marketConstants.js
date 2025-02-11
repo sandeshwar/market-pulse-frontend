@@ -42,3 +42,36 @@ export const MARKET_INDICES = {
   'IWM': 'Russell 2000',
   'VIX': 'VIX',
 };
+
+/**
+ * Market data constants
+ */
+export const MAX_RETRIES = 3;
+export const RETRY_DELAY = 2000;
+
+/**
+ * Market hours configuration
+ */
+export const MARKET_HOURS = {
+  NYSE: {
+    name: 'New York Stock Exchange',
+    open: '09:30',
+    close: '16:00',
+    timezone: 'America/New_York',
+    weekdays: [1, 2, 3, 4, 5]
+  },
+  NASDAQ: {
+    name: 'NASDAQ',
+    open: '09:30',
+    close: '16:00',
+    timezone: 'America/New_York',
+    weekdays: [1, 2, 3, 4, 5]
+  },
+  DOW: {
+    name: 'Dow Jones',
+    open: '09:30',
+    close: '16:00',
+    timezone: 'America/New_York',
+    weekdays: [1, 2, 3, 4, 5]
+  }
+};

@@ -1,26 +1,4 @@
-const MARKET_HOURS = {
-  NYSE: {
-    name: 'New York Stock Exchange',
-    open: '09:30',
-    close: '16:00',
-    timezone: 'America/New_York',
-    weekdays: [1, 2, 3, 4, 5] // Monday to Friday
-  },
-  NASDAQ: {
-    name: 'NASDAQ',
-    open: '09:30',
-    close: '16:00',
-    timezone: 'America/New_York',
-    weekdays: [1, 2, 3, 4, 5]
-  },
-  DOW: {
-    name: 'Dow Jones',
-    open: '09:30',
-    close: '16:00',
-    timezone: 'America/New_York',
-    weekdays: [1, 2, 3, 4, 5]
-  }
-};
+import { MARKET_HOURS } from '../constants/marketConstants.js';
 
 export function getMarketId(indexName) {
   const normalizedName = indexName.toLowerCase();

@@ -29,10 +29,10 @@ export const LOADING_STATES = {
  * Market indices configuration
  */
 export const MARKET_INDICES = {
-  'SPY': 'S&P 500',
-  'DIA': 'Dow Jones',
-  'QQQ': 'NASDAQ',
-  'IWM': 'Russell 2000',
+  'SPX': 'S&P 500',
+  'DJI': 'Dow Jones',
+  'IXIC': 'NASDAQ',
+  'NDX': 'NASDAQ 100',
   'VIX': 'VIX',
 };
 
@@ -43,28 +43,27 @@ export const MAX_RETRIES = 3;
 export const RETRY_DELAY = 2000;
 
 /**
- * Market hours configuration
+ * Market hours configuration (in UTC)
  */
 export const MARKET_HOURS = {
-  NYSE: {
-    name: 'New York Stock Exchange',
-    open: '09:30',
-    close: '16:00',
-    timezone: 'America/New_York',
-    weekdays: [1, 2, 3, 4, 5]
+  'SPX': {
+    'open': 930,
+    'close': 1600,
   },
-  NASDAQ: {
-    name: 'NASDAQ',
-    open: '09:30',
-    close: '16:00',
-    timezone: 'America/New_York',
-    weekdays: [1, 2, 3, 4, 5]
+  'DJI': {
+    'open': 930,
+    'close': 1600,
   },
-  DOW: {
-    name: 'Dow Jones',
-    open: '09:30',
-    close: '16:00',
-    timezone: 'America/New_York',
-    weekdays: [1, 2, 3, 4, 5]
-  }
+  'IXIC': {
+    'open': 930,
+    'close': 1600,
+  },
+  'NDX': {
+    'open': 930,
+    'close': 1600,
+  },
+  'VIX': {
+    'open': 930,
+    'close': 1600,
+  },
 };

@@ -23,6 +23,7 @@ function createWatchlistItem({ symbol, name, price, change, changePercent }, ind
   `;
 }
 
+// TODO: Add watchlist management
 export function createWatchlistCard({ title = 'My Watchlist' }) {
   const stocks = [
     { symbol: 'AAPL', name: 'Apple Inc.', price: '173.75', change: 2.34, changePercent: 1.37 },

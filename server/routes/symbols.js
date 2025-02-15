@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const symbolCache = require('../services/symbolCache');
 
+
 // GET /api/symbols/search?q=AAPL
 router.get('/search', (req, res) => {
     const query = req.query.q?.trim();

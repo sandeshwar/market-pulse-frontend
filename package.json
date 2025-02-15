@@ -7,10 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:extension": "vite build --outDir dist --emptyOutDir"
+    "build:extension": "vite build --outDir dist --emptyOutDir",
   },
   "dependencies": {
-    "feather-icons": "^4.29.2"
+    "feather-icons": "^4.29.2",
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.21",
@@ -18,13 +18,13 @@
     "@types/node": "^22.10.5",
     "buffer": "^6.0.3",
     "querystring-es3": "^0.2.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "rollup-plugin-node-polyfills": "^0.2.1",
     "stream-browserify": "^3.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
     "url": "^0.11.4",
-    "vite": "^5.0.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "vite": "^5.0.0"
   }
 }

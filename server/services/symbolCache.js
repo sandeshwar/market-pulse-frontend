@@ -71,6 +71,7 @@ class SymbolCache {
 const symbolCache = new SymbolCache();
 
 // Initialize on startup
+console.log('Initializing symbol cache');
 symbolCache.initializeCache();
 
 // Update cache every day at midnight

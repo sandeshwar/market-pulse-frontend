@@ -11,6 +11,9 @@ importers:
       feather-icons:
         specifier: ^4.29.2
         version: 4.29.2
+      market-pulse-server:
+        specifier: link:server
+        version: link:server
     devDependencies:
       '@crxjs/vite-plugin':
         specifier: ^2.0.0-beta.21

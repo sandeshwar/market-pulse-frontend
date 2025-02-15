@@ -1,57 +1,67 @@
 import { createCard } from '../../common/Card/Card.js';
 import { ICONS } from '../../../utils/icons.js';
+import { MarketDataNewsProvider } from '../../../services/MarketDataNewsProvider.js';
 
-function createNewsItem({ title, url, image, time }) {
+const newsProvider = new MarketDataNewsProvider();
+
+function createNewsItem({ headline, source, updated, symbol }) {
+  const time = new Date(updated * 1000).toLocaleString();
   return `
-    <div 
-      class="news-item" 
-      onclick="window.open('${url}', '_blank')"
-      style="display: flex"
-    >
+    <div class="news-item" onclick="window.open('${source}', '_blank')">
       <div class="news-content">
-        <div class="news-title">${title}</div>
+        <span class="news-symbol">${symbol}</span>
+        <div class="news-title">${headline}</div>
         <div class="news-time">${time}</div>
-      </div>
-      <div class="news-image-container">
-        <img src="${image}" alt="" class="news-image">
       </div>
     </div>
   `;
 }
 
 export function createBreakingNewsCard() {
-  const news = [
-    {
-      title: 'Samsung reveals schedule who gets update of One UI 4 with Android 12',
-      url: '#',
-      image: 'https://images.unsplash.com/photo-1610945264803-c22b62d2a7b3?auto=format&fit=crop&w=64&h=64&q=80',
-      time: '2h'
-    },
-    {
-      title: 'Does life replay before our eyes when we die? Find out what happens in the brain when a person dies',
-      url: '#',
-      image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&w=64&h=64&q=80',
-      time: '1d'
-    },
-    {
-      title: 'RRR finds a fan in Klaus Mikaelson aka Joseph Morgan: \'Absolute masterpiece\'',
-      url: '#',
-      image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=64&h=64&q=80',
-      time: '2d'
-    }
-  ];
-
-  const content = `
-    <div class="breaking-news">
-      <div class="news-list">
-        ${news.map(item => createNewsItem(item)).join('')}
-      </div>
-    </div>
-  `;
-
-  return createCard({
+  const card = createCard({
     title: 'Breaking News',
     icon: ICONS.globe,
-    content
+    content: `
+      <div class="breaking-news">
+        <div class="loading">Loading news...</div>
+      </div>
+    `
   });
+
+  // Since we're using vanilla JS, we need to wait for the element to be in the DOM
+  setTimeout(async () => {
+    const cardElement = document.querySelector('.breaking-news');
+    if (cardElement) {
+      await loadNewsContent(cardElement);
+    }
+  }, 0);
+
+  return card;
+}
+
+async function loadNewsContent(newsElement) {
+  try {
+    const symbols = ['AAPL', 'MSFT', 'GOOGL'];
+    const newsPromises = symbols.map(symbol => newsProvider.getStockNews(symbol));
+    const newsResults = await Promise.all(newsPromises);
+    
+    // Flatten and sort news by timestamp
+    const allNews = newsResults
+      .flatMap(result => result.news.map(item => ({ ...item, symbol: result.symbol })))
+      .sort((a, b) => b.updated - a.updated)
+      .slice(0, 5);
+
+    newsElement.outerHTML = `
+      <div class="breaking-news">
+        <div class="news-list">
+          ${allNews.map(item => createNewsItem(item)).join('')}
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Failed to load news:', error);
+    newsElement.outerHTML = `
+      <div class="error">Failed to load news</div>
+    `;
+  }
 }

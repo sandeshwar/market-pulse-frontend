@@ -38,7 +38,7 @@ export class MarketDataNewsProvider extends MarketDataNewsProviderInterface {
         }]
       };
     } catch (error) {
-      console.error('MarketData.app news error:', error);
+      console.error('marketdata.app news error:', error);
       throw error;
     }
   }

@@ -19,5 +19,7 @@ export const ICONS = {
   home: 'home',
   settings: 'settings',
   list: 'list',
-  edit: 'edit'
+  edit: 'edit',
+  link: 'link',
+  tag: 'tag'
 };

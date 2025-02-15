@@ -6,12 +6,17 @@ const newsProvider = new MarketDataNewsProvider();
 
 function createNewsItem({ headline, source, updated, symbol }) {
   const time = new Date(updated * 1000).toLocaleString();
+  const formatedDateTime = time.split(',')[0] + ', ' + time.split(',')[1].slice(0, 6);
+  const sourceHostname = new URL(source).hostname.replace('www.', '');
   return `
     <div class="news-item">
       <div class="news-content">
-        <span class="news-symbol">${symbol}</span>
-        <div class="news-title">${headline}</div>
-        <div class="news-time">${time}</div>
+        <div class="news-symbol"><i data-feather="${ICONS.tag}"></i> ${symbol}</div>
+        <div class="news-title"> ${headline}</div>
+        <div class="news-meta">
+          <span class="news-time"><i data-feather="${ICONS.clock}"></i> ${formatedDateTime}</span>
+          <span class="news-source"><i data-feather="${ICONS.link}"></i> (${sourceHostname})</span>
+        </div>
       </div>
     </div>
   `;

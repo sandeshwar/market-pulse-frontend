@@ -10,7 +10,7 @@
     "build:extension": "vite build --outDir dist --emptyOutDir",
   },
   "dependencies": {
-    "feather-icons": "^4.29.2",
+    "feather-icons": "^4.29.2"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.21",

@@ -7,7 +7,7 @@ const newsProvider = new MarketDataNewsProvider();
 function createNewsItem({ headline, source, updated, symbol }) {
   const time = new Date(updated * 1000).toLocaleString();
   return `
-    <div class="news-item" onclick="window.open('${source}', '_blank')">
+    <div class="news-item">
       <div class="news-content">
         <span class="news-symbol">${symbol}</span>
         <div class="news-title">${headline}</div>
@@ -58,6 +58,13 @@ async function loadNewsContent(newsElement) {
         </div>
       </div>
     `;
+
+    // Add click handlers after rendering
+    document.querySelectorAll('.news-item').forEach(item => {
+      const newsIndex = Array.from(item.parentElement.children).indexOf(item);
+      const newsData = allNews[newsIndex];
+      item.addEventListener('click', () => window.open(newsData.source, '_blank'));
+    });
   } catch (error) {
     console.error('Failed to load news:', error);
     newsElement.outerHTML = `

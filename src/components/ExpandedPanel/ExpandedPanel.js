@@ -1,6 +1,6 @@
 import { createTabNavigation } from './TabNavigation/TabNavigation.js';
 import { createMarketIndicesCard } from '../cards/MarketIndices/MarketIndices.js';
-import { createWatchlistCard } from '../cards/Watchlist/Watchlist.js';
+import { createWatchlistCard } from '../cards/Watchlist/Watchlist.jsx';
 import { createBreakingNewsCard } from '../cards/BreakingNews/BreakingNews.js';
 import { createSettingsPage } from './Settings/SettingsPage.js';
 

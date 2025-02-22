@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:extension": "vite build --outDir dist --emptyOutDir",
+    "build:extension": "vite build --outDir dist --emptyOutDir"
   },
   "dependencies": {
     "feather-icons": "^4.29.2"

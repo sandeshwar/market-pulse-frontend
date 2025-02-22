@@ -2,6 +2,28 @@ class WatchlistService {
     constructor() {
         this.storageKey = 'watchlists';
         this.initialized = false;
+        this.listeners = new Set();
+        
+        // Listen for storage changes
+        if (chrome.storage) {
+            chrome.storage.onChanged.addListener((changes, area) => {
+                if (area === 'sync' && changes[this.storageKey]) {
+                    this.notifyListeners(changes[this.storageKey].newValue);
+                }
+            });
+        }
+    }
+
+    addListener(callback) {
+        this.listeners.add(callback);
+    }
+
+    removeListener(callback) {
+        this.listeners.delete(callback);
+    }
+
+    notifyListeners(watchlists) {
+        this.listeners.forEach(callback => callback(watchlists));
     }
 
     async initializeStorage() {
@@ -107,4 +129,4 @@ class WatchlistService {
     }
 }
 
-export const watchlistService = new WatchlistService(); 
+export const watchlistService = new WatchlistService();

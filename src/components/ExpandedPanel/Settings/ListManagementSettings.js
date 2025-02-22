@@ -9,8 +9,16 @@ import { replaceIcons } from '../../../utils/feather.js';
 let settingsElement = null;
 
 async function handleEditWatchlist(name) {
-  // For now, just show a modal or alert
-  alert(`Edit watchlist: ${name}`);
+  const newName = prompt('Enter new name for watchlist:', name);
+  if (newName && newName !== name) {
+    try {
+      await watchlistService.renameWatchlist(name, newName);
+      await updateWatchlistsUI();
+    } catch (error) {
+      console.error('Error renaming watchlist:', error);
+      alert('Failed to rename watchlist');
+    }
+  }
 }
 
 async function handleDeleteWatchlist(name) {
@@ -26,12 +34,28 @@ async function handleDeleteWatchlist(name) {
 }
 
 async function handleAddSymbol(watchlistName, symbol) {
+  if (!symbol) return;
+  
   try {
-    await watchlistService.addSymbol(watchlistName, symbol);
+    // Normalize symbol (remove spaces, convert to uppercase)
+    const normalizedSymbol = symbol.trim().toUpperCase();
+    
+    // Validate symbol exists by trying to get a quote
+    const quote = await marketDataProvider.getQuote(normalizedSymbol);
+    if (!quote) {
+      alert(`Invalid symbol: ${normalizedSymbol}`);
+      return;
+    }
+    
+    await watchlistService.addSymbol(watchlistName, normalizedSymbol);
     await updateWatchlistsUI();
   } catch (error) {
     console.error('Error adding symbol:', error);
-    alert('Failed to add symbol to watchlist');
+    if (error.message === 'Symbol already in watchlist') {
+      alert(`${symbol} is already in the watchlist`);
+    } else {
+      alert('Failed to add symbol to watchlist');
+    }
   }
 }
 
@@ -102,9 +126,11 @@ async function createListItem({ name, symbols = [], actions = [], showFooter = t
         <div class="list-item-name">${item.name}</div>
         <div class="list-item-price">${item.price}</div>
       </div>
-      <button class="btn btn--icon btn--delete" data-action="removeSymbol" data-watchlist-name="${name}" data-symbol="${item.symbol}" title="Remove item">
-        <i data-feather="${ICONS.trash}"></i>
-      </button>
+      <div class="list-item-actions">
+        <button class="btn btn--icon btn--delete" data-action="removeSymbol" data-watchlist-name="${name}" data-symbol="${item.symbol}" title="Remove symbol">
+          <i data-feather="${ICONS.trash}"></i>
+        </button>
+      </div>
     </div>
   `).join('');
 
@@ -120,7 +146,7 @@ async function createListItem({ name, symbols = [], actions = [], showFooter = t
             <i data-feather="${ICONS.search}" class="input-icon"></i>
             <input 
               type="text" 
-              class="input-field"
+              class="input-field symbol-input"
               placeholder="Add symbol..."
               data-watchlist-name="${name}"
               onkeyup="if(event.key === 'Enter' && this.value) {
@@ -131,7 +157,7 @@ async function createListItem({ name, symbols = [], actions = [], showFooter = t
                 }
               }"
             />
-            <button class="btn btn--icon" data-action="addSymbol" data-watchlist-name="${name}">
+            <button class="btn btn--icon" data-action="addSymbol" data-watchlist-name="${name}" title="Add symbol">
               <i data-feather="${ICONS.plus}"></i>
             </button>
           </div>
@@ -201,13 +227,25 @@ export function createListManagementSettings() {
   `;
   settingsElement = settingsElement.firstElementChild;
 
-  // Listen for watchlist update events
+  // Add direct watchlist service listener
+  const handleWatchlistUpdate = async () => {
+    await updateWatchlistsUI();
+  };
+  watchlistService.addListener(handleWatchlistUpdate);
+
+  // Also listen for watchlist update events for backward compatibility
   const settingsPage = document.querySelector('.settings-page');
   if (settingsPage) {
-    settingsPage.addEventListener('watchlist-updated', async () => {
-      await updateWatchlistsUI();
-    });
+    settingsPage.addEventListener('watchlist-updated', handleWatchlistUpdate);
   }
+
+  // Cleanup function
+  settingsElement.cleanup = () => {
+    watchlistService.removeListener(handleWatchlistUpdate);
+    if (settingsPage) {
+      settingsPage.removeEventListener('watchlist-updated', handleWatchlistUpdate);
+    }
+  };
 
   // Initialize after render
   setTimeout(async () => {

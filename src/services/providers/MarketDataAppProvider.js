@@ -92,6 +92,57 @@ export class MarketDataAppProvider extends MarketDataProvider {
     }
   }
 
+  async getQuote(symbol) {
+    try {
+      await this.initialize();
+      
+      const response = await fetch(
+        `https://api.marketdata.app/v1/stocks/quotes/${symbol}?token=${this.apiKey}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Invalid or expired API key');
+        }
+        console.warn(`Failed to fetch quote for ${symbol}: ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      
+      if (data.s !== 'ok') {
+        console.warn(`Invalid response for ${symbol}: ${data.s}`);
+        return null;
+      }
+
+      const price = parseFloat(data.last?.[0]);
+      const change = parseFloat(data.ch?.[0] || 0);
+      const changePercent = parseFloat(data.chp?.[0] || 0);
+      const name = data.name?.[0] || symbol;
+
+      if (isNaN(price)) {
+        console.warn(`Invalid numeric data for ${symbol}`);
+        return null;
+      }
+
+      return {
+        name,
+        price,
+        change,
+        changePercent
+      };
+    } catch (error) {
+      console.error(`Error fetching quote for ${symbol}:`, error);
+      throw error;
+    }
+  }
+
   async searchSymbols(query) {
     try {
         // Check cache first

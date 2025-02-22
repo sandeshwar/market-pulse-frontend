@@ -2,8 +2,8 @@ import { ICONS } from '../../../utils/icons.js';
 
 const TABS = [
   { id: 'home', label: 'Home', icon: ICONS.home },
-  { id: 'watchlists', label: 'Watchlists', icon: ICONS.star },
-  { id: 'markets', label: 'Markets', icon: ICONS.barChart2 },
+  // { id: 'watchlists', label: 'Watchlists', icon: ICONS.star }, // Hiding for now
+  // { id: 'markets', label: 'Markets', icon: ICONS.barChart2 }, // Hiding for now
   { id: 'news', label: 'News', icon: ICONS.globe },
   { id: 'settings', label: 'Settings', icon: ICONS.settings }
 ];

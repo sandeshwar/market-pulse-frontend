@@ -30,7 +30,6 @@ function createWatchlistItem({ symbol, name, price, change, changePercent }) {
 
 export async function createWatchlistCard({ title = 'My Watchlist' }) {
   let isMounted = true;
-  let refreshInterval;
 
   // Create initial card with loading state
   const cardElement = createElementFromHTML(createCard({
@@ -57,11 +56,38 @@ export async function createWatchlistCard({ title = 'My Watchlist' }) {
     try {
       const watchlists = await watchlistService.getWatchlists();
       const activeWatchlist = watchlists?.[0];
-      if (!activeWatchlist) return;
+
+      // If no watchlist exists, show create button
+      if (!watchlists.length) {
+        const content = `
+          <div class="empty-state">
+            <p>No watchlist created yet</p>
+            <button class="btn btn--primary" data-action="createWatchlist">
+              <i data-feather="${ICONS.plus}"></i>
+              Create Watchlist
+            </button>
+          </div>
+        `;
+        updateCardContent(content);
+        await replaceIcons();
+        return;
+      }
+
+      // If watchlist exists but has no symbols
+      if (!activeWatchlist.symbols?.length) {
+        const content = `
+          <div class="empty-state">
+            <p>No stocks in watchlist</p>
+            <p class="hint">Add stocks in Settings → Watchlist</p>
+          </div>
+        `;
+        updateCardContent(content);
+        return;
+      }
       
       // Get quotes for all symbols
       const stocksWithQuotes = await Promise.all(
-        (activeWatchlist.symbols || []).map(async (symbol) => {
+        activeWatchlist.symbols.map(async (symbol) => {
           try {
             const quote = await marketDataProvider.getQuote(symbol);
             if (!quote) return null;
@@ -85,10 +111,7 @@ export async function createWatchlistCard({ title = 'My Watchlist' }) {
       const validStocks = stocksWithQuotes.filter(stock => stock !== null);
       const content = `
         <div class="watchlist">
-          ${validStocks.length > 0 
-            ? validStocks.map(stock => createWatchlistItem(stock)).join('')
-            : '<div class="empty-state">No stocks in watchlist</div>'
-          }
+          ${validStocks.map(stock => createWatchlistItem(stock)).join('')}
         </div>
       `;
 
@@ -107,10 +130,8 @@ export async function createWatchlistCard({ title = 'My Watchlist' }) {
     // Initial load
     await updateWatchlist();
 
-    // Set up auto-refresh if initial load was successful
-    if (cardElement.querySelector('.watchlist:not(.error)')) {
-      refreshInterval = setInterval(updateWatchlist, DEFAULT_REFRESH_INTERVAL);
-    }
+    // Add watchlist service listener for updates
+    watchlistService.addListener(updateWatchlist);
   } catch (error) {
     console.error('Error creating watchlist card:', error);
     updateCardContent('<div class="error">Failed to load watchlist</div>');
@@ -119,10 +140,7 @@ export async function createWatchlistCard({ title = 'My Watchlist' }) {
   // Add cleanup method to the card
   cardElement.cleanup = () => {
     isMounted = false;
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
-      refreshInterval = null;
-    }
+    watchlistService.removeListener(updateWatchlist);
   };
 
   return cardElement;

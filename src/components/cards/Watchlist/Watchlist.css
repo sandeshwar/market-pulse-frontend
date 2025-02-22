@@ -23,6 +23,7 @@
   flex: 1;
   justify-content: space-between;
   align-items: center;
+  padding-right: var(--spacing-xs);
 }
 
 .stock-info {
@@ -33,6 +34,7 @@
 
 .stock-symbol {
   font-weight: 500;
+  text-transform: uppercase;
 }
 
 .stock-name {
@@ -42,6 +44,7 @@
 
 .stock-price {
   text-align: right;
+  min-width: 90px;
 }
 
 .stock-change {
@@ -54,6 +57,29 @@
 
 .stock-change.negative {
   color: var(--error);
+}
+
+.watchlist-item-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  opacity: 0;
+  transition: opacity var(--transition-speed) var(--transition-easing);
+}
+
+.watchlist-item-actions .btn {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.watchlist-item-actions .btn i {
+  width: 14px;
+  height: 14px;
+}
+
+.watchlist-item:hover .watchlist-item-actions {
+  opacity: 1;
 }
 
 .loading, .error, .empty-state {
@@ -72,4 +98,24 @@
   background-color: var(--bg-primary);
   border-radius: var(--border-radius-sm);
   border: 1px dashed var(--border-color);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-state p {
+  margin: 0;
+  margin-bottom: var(--spacing-md);
+}
+
+.empty-state p:last-child {
+  margin-bottom: 0;
+}
+
+.empty-state .hint {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.empty-state .btn {
+  margin-top: var(--spacing-md);
 }

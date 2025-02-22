@@ -38,11 +38,6 @@ async function handleEditWatchlist(name) {
   if (newName && newName !== name) {
     try {
       await watchlistService.renameWatchlist(name, newName);
-      const settingsContent = document.querySelector('.settings-page');
-      if (settingsContent) {
-        const event = new CustomEvent('watchlist-updated');
-        settingsContent.dispatchEvent(event);
-      }
     } catch (error) {
       console.error('Error renaming watchlist:', error);
       alert('Failed to rename watchlist');
@@ -54,11 +49,6 @@ async function handleDeleteWatchlist(name) {
   if (confirm(`Are you sure you want to delete the watchlist "${name}"?`)) {
     try {
       await watchlistService.deleteWatchlist(name);
-      const settingsContent = document.querySelector('.settings-page');
-      if (settingsContent) {
-        const event = new CustomEvent('watchlist-updated');
-        settingsContent.dispatchEvent(event);
-      }
     } catch (error) {
       console.error('Error deleting watchlist:', error);
       alert('Failed to delete watchlist');
@@ -71,11 +61,6 @@ async function handleCreateWatchlist() {
   if (name) {
     try {
       await watchlistService.createWatchlist(name);
-      const settingsContent = document.querySelector('.settings-page');
-      if (settingsContent) {
-        const event = new CustomEvent('watchlist-updated');
-        settingsContent.dispatchEvent(event);
-      }
     } catch (error) {
       console.error('Error creating watchlist:', error);
       alert('Failed to create watchlist');
@@ -86,11 +71,6 @@ async function handleCreateWatchlist() {
 async function handleAddSymbol(watchlistName, symbol) {
   try {
     await watchlistService.addSymbol(watchlistName, symbol);
-    const settingsContent = document.querySelector('.settings-page');
-    if (settingsContent) {
-      const event = new CustomEvent('watchlist-updated');
-      settingsContent.dispatchEvent(event);
-    }
   } catch (error) {
     console.error('Error adding symbol:', error);
     alert('Failed to add symbol to watchlist');
@@ -100,11 +80,6 @@ async function handleAddSymbol(watchlistName, symbol) {
 async function handleRemoveSymbol(watchlistName, symbol) {
   try {
     await watchlistService.removeSymbol(watchlistName, symbol);
-    const settingsContent = document.querySelector('.settings-page');
-    if (settingsContent) {
-      const event = new CustomEvent('watchlist-updated');
-      settingsContent.dispatchEvent(event);
-    }
   } catch (error) {
     console.error('Error removing symbol:', error);
     alert('Failed to remove symbol from watchlist');

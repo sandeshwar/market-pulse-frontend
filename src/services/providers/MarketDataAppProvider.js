@@ -1,10 +1,11 @@
 import { MarketDataProvider } from './MarketDataProvider.interface';
 import { MARKET_INDICES } from '../../constants/marketConstants.js';
+import { config } from '../../config.js';
 
 export class MarketDataAppProvider extends MarketDataProvider {
   constructor() {
     super();
-    this.apiKey = 'VG1hV1pNclRSeUYtZ2N1S2kyeXhvanBKbloyUTVtVGl6a2VjemNpazFyYz0';
+    this.apiKey = config.API_KEY;
     this.searchCache = new Map(); // Cache search results
     this.cacheExpiry = 24 * 60 * 60 * 1000; // 24 hours
     this.symbols = [];
@@ -119,9 +120,9 @@ export class MarketDataAppProvider extends MarketDataProvider {
             return cached.results;
         }
 
-        // Fetch from our server
+        // Fetch from our server using configured API_URL
         const response = await fetch(
-            `https://your-server.com/api/symbols/search?q=${encodeURIComponent(query)}`
+            `${config.API_URL}symbols/search?q=${encodeURIComponent(query)}`
         );
         const data = await response.json();
 

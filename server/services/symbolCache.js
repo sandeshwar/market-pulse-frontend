@@ -76,6 +76,7 @@ class SymbolCache {
     }
 
     async searchSymbols(query) {
+        console.log('Searching symbols for query:', query);
         if (!this.isInitialized) {
             await this.initializeCache();
         }

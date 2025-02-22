@@ -4,6 +4,7 @@ import { createMarketStatus } from '../../common/MarketStatus/MarketStatus.js';
 import { getMarketId } from '../../../utils/marketStatus.js';
 import { marketDataService } from '../../../services/marketDataService.js';
 import { DEFAULT_REFRESH_INTERVAL, MAX_RETRIES, RETRY_DELAY } from '../../../constants/marketConstants.js';
+import { createElementFromHTML } from '../../../utils/dom.js';
 
 function createIndexItem({ name, value, change, changePercent }) {
 	// Handle null/undefined values
@@ -49,13 +50,6 @@ function createErrorState(error) {
       </div>
     </div>
   `;
-}
-
-// Helper function to convert HTML string to DOM element
-function createElementFromHTML(htmlString) {
-	const div = document.createElement('div');
-	div.innerHTML = htmlString.trim();
-	return div.firstElementChild;
 }
 
 export async function createMarketIndicesCard() {

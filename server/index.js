@@ -3,6 +3,7 @@ const router = express.Router();
 const symbolsRouter = require('./routes/symbols');
 const app = express();
 
+// Register routes
 app.use('/api/symbols', symbolsRouter);
 
 const server = app.listen(3000, () => {

@@ -5,61 +5,84 @@ import { config } from '../../config.js';
 export class MarketDataAppProvider extends MarketDataProvider {
   constructor() {
     super();
-    this.apiKey = config.API_KEY;
+    this.initialized = false;
     this.searchCache = new Map(); // Cache search results
     this.cacheExpiry = 24 * 60 * 60 * 1000; // 24 hours
   }
 
+  async initialize() {
+    if (this.initialized) return;
+    
+    this.apiKey = config.API_KEY;
+    
+    if (!this.apiKey) {
+      throw new Error('API key not configured');
+    }
+    
+    this.initialized = true;
+  }
+
   async getMarketIndices() {
     try {
+      await this.initialize();
+
       // Make individual requests for each index
       const promises = Object.keys(MARKET_INDICES).map(async (symbol) => {
-        const response = await fetch(
-          `https://api.marketdata.app/v1/indices/quotes/${symbol}?token=${this.apiKey}`,
-          {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json'
+        try {
+          const response = await fetch(
+            `https://api.marketdata.app/v1/indices/quotes/${symbol}?token=${this.apiKey}`,
+            {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json'
+              }
             }
+          );
+
+          if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              throw new Error('Invalid or expired API key');
+            }
+            console.warn(`Failed to fetch data for ${symbol}: ${response.status}`);
+            return null;
           }
-        );
 
-        if (!response.ok) {
-          console.warn(`Failed to fetch data for ${symbol}`);
+          const data = await response.json();
+          
+          if (data.s !== 'ok') {
+            console.warn(`Invalid response for ${symbol}: ${data.s}`);
+            return null;
+          }
+
+          const price = parseFloat(data.last?.[0]);
+          const change = parseFloat(data.ch?.[0] || 0);
+          const changePercent = parseFloat(data.chp?.[0] || 0);
+
+          if (isNaN(price)) {
+            console.warn(`Invalid numeric data for ${symbol}`);
+            return null;
+          }
+
+          return {
+            name: MARKET_INDICES[symbol],
+            value: price,
+            change: change || 0,
+            changePercent: changePercent || 0
+          };
+        } catch (error) {
+          if (error.message === 'Invalid or expired API key') {
+            throw error; // Re-throw auth errors
+          }
+          console.error(`Error fetching ${symbol}:`, error);
           return null;
         }
-
-        const data = await response.json();
-        
-        // Handle the single index response
-        if (data.s !== 'ok') {
-          console.warn(`Invalid response for ${symbol}`);
-          return null;
-        }
-
-        // Indices endpoint returns last instead of c for current price
-        const price = parseFloat(data.last?.[0]);
-        const change = parseFloat(data.ch?.[0] || 0); // Change might not be provided
-        const changePercent = parseFloat(data.chp?.[0] || 0);
-
-        if (isNaN(price)) {
-          console.warn(`Invalid numeric data for ${symbol}`);
-          return null;
-        }
-
-        return {
-          name: MARKET_INDICES[symbol],
-          value: price,
-          change: change || 0,
-          changePercent: changePercent || 0
-        };
       });
 
       const results = await Promise.all(promises);
       const validQuotes = results.filter(quote => quote !== null);
 
       if (validQuotes.length === 0) {
-        throw new Error('Unable to fetch any market data');
+        throw new Error('Unable to fetch market data. Please check your network connection.');
       }
 
       return validQuotes;

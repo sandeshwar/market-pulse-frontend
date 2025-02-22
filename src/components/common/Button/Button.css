@@ -16,9 +16,17 @@
   opacity: 0.9;
 }
 
+.btn:active {
+  transform: scale(0.98);
+}
+
 .btn--icon {
   padding: var(--spacing-xs);
   color: var(--text-secondary);
+  min-width: 32px;
+  min-height: 32px;
+  position: relative;
+  z-index: 1;
 }
 
 .btn--icon:hover {
@@ -63,22 +71,10 @@
   height: 16px;
   display: flex;
   align-items: center;
+  pointer-events: none;
 }
 
-.btn--delete i,
-.btn--edit i {
-  width: 12px;
-  height: 12px;
-}
-
-.btn--icon {
-  padding: var(--spacing-xs);
-  border-radius: var(--border-radius-sm);
-  opacity: 0.8;
-  transition: all var(--transition-speed) var(--transition-easing);
-}
-
-.btn--icon:hover {
-  opacity: 1;
-  background-color: rgba(255, 255, 255, 0.1);
+.btn--icon i {
+  width: 14px;
+  height: 14px;
 }

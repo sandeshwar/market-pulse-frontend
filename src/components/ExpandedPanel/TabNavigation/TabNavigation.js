@@ -9,23 +9,27 @@ const TABS = [
 ];
 
 function createTabItem({ id, label, icon }, isActive = false) {
-  return `
-    <button 
-      class="tab-item ${isActive ? 'active' : ''}"
-      data-tab="${id}"
-      data-action="handleTabSwitch"
-      data-tab-id="${id}"
-      title="${label}"
-    >
-      <i data-feather="${icon}"></i>
-    </button>
-  `;
+  const button = document.createElement('button');
+  button.className = `tab-item ${isActive ? 'active' : ''}`;
+  button.dataset.tab = id;
+  button.dataset.action = 'handleTabSwitch';
+  button.dataset.tabId = id;
+  button.title = label;
+  
+  const iconElement = document.createElement('i');
+  iconElement.dataset.feather = icon;
+  button.appendChild(iconElement);
+  
+  return button;
 }
 
 export function createTabNavigation(activeTab = 'home') {
-  return `
-    <nav class="tab-navigation">
-      ${TABS.map(tab => createTabItem(tab, tab.id === activeTab)).join('')}
-    </nav>
-  `;
+  const nav = document.createElement('nav');
+  nav.className = 'tab-navigation';
+  
+  TABS.forEach(tab => {
+    nav.appendChild(createTabItem(tab, tab.id === activeTab));
+  });
+  
+  return nav;
 }

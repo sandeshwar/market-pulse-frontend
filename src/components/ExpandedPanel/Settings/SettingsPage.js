@@ -1,9 +1,13 @@
 import { createListManagementSettings } from './ListManagementSettings.js';
 
-export function createSettingsPage() {
-  return `
-    <div class="settings-page">
-      ${createListManagementSettings()}
-    </div>
-  `;
+export async function createSettingsPage() {
+  // Get the list management settings element
+  const listManagementElement = createListManagementSettings();
+  
+  // Create a wrapper element
+  const settingsPage = document.createElement('div');
+  settingsPage.className = 'settings-page';
+  settingsPage.appendChild(listManagementElement);
+  
+  return settingsPage;
 }

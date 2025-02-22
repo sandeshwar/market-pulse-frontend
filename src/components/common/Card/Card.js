@@ -26,7 +26,8 @@ export function createCard({
           <div class="card__actions">
             ${actions.map(action => createButton({
               ...action,
-              variant: 'icon'
+              variant: 'icon',
+              'data-action': action.onClick
             })).join('')}
           </div>
         ` : ''}

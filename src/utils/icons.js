@@ -21,5 +21,8 @@ export const ICONS = {
   list: 'list',
   edit: 'edit',
   link: 'link',
-  tag: 'tag'
+  tag: 'tag',
+  plus: 'plus',
+  alertTriangle: 'alert-triangle',
+  loader: 'loader'
 };

@@ -176,6 +176,15 @@ async function initializeApp() {
 
     // Initialize Feather icons
     await replaceIcons();
+    
+    // Hide loading screen with fade-out animation
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+      loadingScreen.classList.add('fade-out');
+      setTimeout(() => {
+        loadingScreen.remove();
+      }, 300);
+    }
   } catch (error) {
     console.error('Failed to initialize application:', error);
     sidePanelContainer.innerHTML = `
@@ -186,6 +195,12 @@ async function initializeApp() {
     `;
     wireframeContainer.appendChild(sidePanelContainer);
     document.body.appendChild(wireframeContainer);
+    
+    // Hide loading screen even on error
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+      loadingScreen.remove();
+    }
   }
 }
 

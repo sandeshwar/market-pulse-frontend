@@ -6,6 +6,9 @@ import feather from 'feather-icons';
  */
 let featherInstance = null;
 
+// Preload Feather icons
+initFeather().catch(error => console.error('Failed to preload Feather icons:', error));
+
 /**
  * Initialize Feather Icons library
  * @returns {Promise<Object>} Initialized Feather instance

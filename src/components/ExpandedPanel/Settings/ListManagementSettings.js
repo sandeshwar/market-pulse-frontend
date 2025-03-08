@@ -7,103 +7,183 @@ import { marketDataProvider } from '../../../services/providers/MarketDataAppPro
 import { replaceIcons } from '../../../utils/feather.js';
 
 let settingsElement = null;
+let suggestionTimeout = null;
 
-// async function handleEditWatchlist(name) {
-//   const newName = prompt('Enter new name for watchlist:', name);
-//   if (newName && newName !== name) {
-//     try {
-//       await watchlistService.renameWatchlist(name, newName);
-//       await updateWatchlistsUI();
-//     } catch (error) {
-//       console.error('Error renaming watchlist:', error);
-//       alert('Failed to rename watchlist');
-//     }
-//   }
-// }
+function setupSymbolInputListeners(input, watchlistName) {
+  // Remove any existing listeners first
+  input.removeEventListener('input', input._inputHandler);
+  input.removeEventListener('keyup', input._keyupHandler);
 
-// async function handleDeleteWatchlist(name) {
-//   if (confirm(`Are you sure you want to delete the watchlist "${name}"?`)) {
-//     try {
-//       await watchlistService.deleteWatchlist(name);
-//       await updateWatchlistsUI();
-//     } catch (error) {
-//       console.error('Error deleting watchlist:', error);
-//       alert('Failed to delete watchlist');
-//     }
-//   }
-// }
+  // Handle input changes for suggestions
+  input._inputHandler = (e) => {
+    clearTimeout(suggestionTimeout);
+    suggestionTimeout = setTimeout(() => {
+      showSymbolSuggestions(input, watchlistName);
+    }, 300);
+  };
 
-// async function handleAddSymbol(watchlistName, symbol) {
-//   if (!symbol) return;
-  
-//   try {
-//     // Normalize symbol (remove spaces, convert to uppercase)
-//     const normalizedSymbol = symbol.trim().toUpperCase();
-    
-//     // Validate symbol exists by trying to get a quote
-//     const quote = await marketDataProvider.getQuote(normalizedSymbol);
-//     if (!quote) {
-//       alert(`Invalid symbol: ${normalizedSymbol}`);
-//       return;
-//     }
-    
-//     await watchlistService.addSymbol(watchlistName, normalizedSymbol);
-//     await updateWatchlistsUI();
-//   } catch (error) {
-//     console.error('Error adding symbol:', error);
-//     if (error.message === 'Symbol already in watchlist') {
-//       alert(`${symbol} is already in the watchlist`);
-//     } else {
-//       alert('Failed to add symbol to watchlist');
-//     }
-//   }
-// }
+  // Handle enter key
+  input._keyupHandler = (e) => {
+    if (e.key === 'Enter' && input.value) {
+      const button = input.closest('.input-wrapper').querySelector('[data-action="addSymbol"]');
+      if (button) {
+        button.click();
+        input.value = '';
+      }
+    }
+  };
 
-// async function handleRemoveSymbol(watchlistName, symbol) {
-//   try {
-//     await watchlistService.removeSymbol(watchlistName, symbol);
-//     await updateWatchlistsUI();
-//   } catch (error) {
-//     console.error('Error removing symbol:', error);
-//     alert('Failed to remove symbol from watchlist');
-//   }
-// }
+  // Add the listeners
+  input.addEventListener('input', input._inputHandler);
+  input.addEventListener('keyup', input._keyupHandler);
+}
 
-// // currently we only support one watchlist, but can be extended
-// async function handleCreateWatchlist() {
-//   const name = prompt('Enter watchlist name:');
-//   if (name) {
-//     try {
-//       await watchlistService.createWatchlist(name);
-//       await updateWatchlistsUI();
-//     } catch (error) {
-//       console.error('Error creating watchlist:', error);
-//       alert('Failed to create watchlist');
-//     }
-//   }
-// }
+async function showSymbolSuggestions(input, watchlistName) {
+  const query = input.value.trim();
 
-// // currently we only support one watchlist, but can be extended
-// function createListHeader({ name, actions = [] }) {
-//   return `
-//     <div class="list-header">
-//       <h4 class="list-title">${name}</h4>
-//       ${actions.length ? `
-//         <div class="list-actions">
-//           ${actions.map(action => createButton({
-//             'data-action': action.handler,
-//             'data-watchlist-name': name,
-//             icon: ICONS[action.icon],
-//             title: action.title,
-//             variant: `icon${action.icon === 'trash' ? ' btn--delete' : action.icon === 'edit' ? ' btn--edit' : ''}`,
-//           })).join('')}
-//         </div>
-//       ` : ''}
-//     </div>
-//   `;
-// }
+  // Remove existing suggestions and clean up event listeners
+  const existingSuggestions = document.querySelector('.symbol-suggestions');
+  if (existingSuggestions) {
+    existingSuggestions.remove();
+    input.removeEventListener('keydown', handleSuggestionKeyNavigation);
+  }
+
+  if (query.length < 2) return;
+
+  try {
+    const results = await marketDataProvider.searchSymbols(query);
+    if (!results.length) return;
+
+    // Limit to 6 suggestions
+    const limitedResults = results.slice(0, 6);
+
+    const suggestionsEl = document.createElement('div');
+    suggestionsEl.className = 'symbol-suggestions';
+
+    suggestionsEl.innerHTML = limitedResults.map(result => `
+      <div class="suggestion-item" data-symbol="${result.symbol}" data-watchlist="${watchlistName}">
+        <span class="suggestion-symbol">${result.symbol}</span>
+        <span class="suggestion-name">${result.name || 'Unknown'}</span>
+      </div>
+    `).join('');
+
+    // Add click handlers for suggestions
+    suggestionsEl.addEventListener('click', async (e) => {
+      const item = e.target.closest('.suggestion-item');
+      if (!item) return;
+
+      const symbol = item.dataset.symbol;
+      const watchlistName = item.dataset.watchlist;
+
+      // Set the input value to the selected symbol
+      input.value = symbol;
+
+      // Clear suggestions and remove keyboard event listener
+      suggestionsEl.remove();
+      input.removeEventListener('keydown', handleSuggestionKeyNavigation);
+
+      // Add the symbol
+      const addButton = input.closest('.input-wrapper').querySelector('[data-action="addSymbol"]');
+      if (addButton) {
+        addButton.click();
+        // Clear input after adding
+        input.value = '';
+      }
+    });
+
+    // Position and show suggestions
+    const inputContainer = input.closest('.input-container');
+    if (inputContainer) {
+      inputContainer.appendChild(suggestionsEl);
+    } else {
+      input.parentElement.appendChild(suggestionsEl);
+    }
+
+    // Add keyboard navigation for suggestions
+    input.addEventListener('keydown', handleSuggestionKeyNavigation);
+
+    // Highlight the first item by default
+    const firstItem = suggestionsEl.querySelector('.suggestion-item');
+    if (firstItem) {
+      firstItem.classList.add('selected');
+    }
+  } catch (error) {
+    console.error('Error fetching symbol suggestions:', error);
+  }
+}
+
+// Handle keyboard navigation for suggestions
+function handleSuggestionKeyNavigation(e) {
+  const suggestions = document.querySelector('.symbol-suggestions');
+  if (!suggestions) return;
+
+  const items = suggestions.querySelectorAll('.suggestion-item');
+  if (!items.length) return;
+
+  // Find currently selected item
+  const selectedItem = suggestions.querySelector('.suggestion-item.selected');
+  let selectedIndex = -1;
+
+  if (selectedItem) {
+    selectedIndex = Array.from(items).indexOf(selectedItem);
+  }
+
+  switch (e.key) {
+    case 'ArrowDown':
+      e.preventDefault();
+      if (selectedIndex < items.length - 1) {
+        if (selectedItem) selectedItem.classList.remove('selected');
+        items[selectedIndex + 1].classList.add('selected');
+        items[selectedIndex + 1].scrollIntoView({ block: 'nearest' });
+      }
+      break;
+
+    case 'ArrowUp':
+      e.preventDefault();
+      if (selectedIndex > 0) {
+        if (selectedItem) selectedItem.classList.remove('selected');
+        items[selectedIndex - 1].classList.add('selected');
+        items[selectedIndex - 1].scrollIntoView({ block: 'nearest' });
+      }
+      break;
+
+    case 'Enter':
+      if (selectedItem) {
+        e.preventDefault();
+        selectedItem.click();
+      }
+      break;
+
+    case 'Escape':
+      e.preventDefault();
+      suggestions.remove();
+      break;
+  }
+}
+
+// Add click outside handler to close suggestions
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.input-container')) {
+    const suggestions = document.querySelector('.symbol-suggestions');
+    if (suggestions) {
+      suggestions.remove();
+
+      // Also remove keyboard event listener from the input
+      const symbolInput = document.querySelector('.symbol-input');
+      if (symbolInput) {
+        symbolInput.removeEventListener('keydown', handleSuggestionKeyNavigation);
+      }
+    }
+  }
+});
 
 async function createListItem({ name, symbols = [], actions = [], showFooter = true }) {
+  // Remove any existing suggestions when re-rendering
+  const existingSuggestions = document.querySelector('.symbol-suggestions');
+  if (existingSuggestions) {
+    existingSuggestions.remove();
+  }
+  
   // Get real-time quotes for all symbols
   const symbolsWithQuotes = await Promise.all(
     symbols.map(async (symbol) => {
@@ -159,13 +239,6 @@ async function createListItem({ name, symbols = [], actions = [], showFooter = t
                 placeholder="Add symbol..."
                 data-watchlist-name="${name}"
                 aria-label="Enter stock symbol to add"
-                onkeyup="if(event.key === 'Enter' && this.value) {
-                  const button = this.nextElementSibling;
-                  if (button) {
-                    button.click();
-                    this.value = '';
-                  }
-                }"
               />
             </div>
             <button class="btn btn--icon btn--primary" 
@@ -228,6 +301,13 @@ async function updateWatchlistsUI() {
 
     contentElement.innerHTML = content;
     await replaceIcons();
+
+    // Add event listeners to the symbol input after rendering
+    const symbolInput = contentElement.querySelector('.symbol-input');
+    if (symbolInput) {
+      const watchlistName = symbolInput.dataset.watchlistName;
+      setupSymbolInputListeners(symbolInput, watchlistName);
+    }
   } catch (error) {
     console.error('Error updating watchlists UI:', error);
     contentElement.innerHTML = '<div class="error">Failed to load watchlists</div>';
@@ -262,6 +342,25 @@ export function createListManagementSettings() {
 
   // Cleanup function
   settingsElement.cleanup = () => {
+    // Remove any lingering suggestions
+    const existingSuggestions = document.querySelector('.symbol-suggestions');
+    if (existingSuggestions) {
+      existingSuggestions.remove();
+    }
+
+    // Clear debounce timeout
+    if (suggestionTimeout) {
+      clearTimeout(suggestionTimeout);
+    }
+
+    // Remove input event listeners
+    const symbolInput = settingsElement.querySelector('.symbol-input');
+    if (symbolInput) {
+      symbolInput.removeEventListener('input', symbolInput._inputHandler);
+      symbolInput.removeEventListener('keyup', symbolInput._keyupHandler);
+      symbolInput.removeEventListener('keydown', handleSuggestionKeyNavigation);
+    }
+
     watchlistService.removeListener(handleWatchlistUpdate);
     if (settingsPage) {
       settingsPage.removeEventListener('watchlist-updated', handleWatchlistUpdate);
@@ -275,3 +374,5 @@ export function createListManagementSettings() {
 
   return settingsElement;
 }
+
+// No need to expose these variables globally

@@ -4,7 +4,6 @@ import { replaceIcons } from '../../../utils/feather.js';
 import { watchlistService } from '../../../services/watchlistService.js';
 import { useState, useEffect } from 'react';
 import { marketDataProvider } from '../../../services/providers/MarketDataAppProvider.js';
-import { DEFAULT_REFRESH_INTERVAL } from '../../../constants/marketConstants.js';
 import { createElementFromHTML } from '../../../utils/dom.js';
 
 function createWatchlistItem({ symbol, name, price, change, changePercent }) {

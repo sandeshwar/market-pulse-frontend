@@ -9,7 +9,9 @@
     "activeTab"
   ],
   "host_permissions": [
-    "https://*.marketdata.app/*"
+    "https://*.marketdata.app/*",
+    "https://*.luminera.ai/*",
+    "http://localhost:3000/*"
   ],
   "action": {
     "default_popup": "index.html",
@@ -27,6 +29,6 @@
     "default_path": "index.html"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://luminera.ai:* http://localhost:* https://*.marketdata.app:*;"
   }
 }

@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "postinstall": "npm install cors"
   },
   "nodemonConfig": {
     "ignore": [
@@ -19,6 +20,7 @@
     "ext": "js,json"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.18.2",
     "node-cron": "^3.0.3",
     "redis": "^4.7.0"

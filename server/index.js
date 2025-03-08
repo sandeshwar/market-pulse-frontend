@@ -1,7 +1,15 @@
 const express = require('express');
+const cors = require('cors');
 const router = express.Router();
 const symbolsRouter = require('./routes/symbols');
 const app = express();
+
+// Enable CORS
+app.use(cors({
+  origin: ['chrome-extension://*', 'http://localhost:*', 'https://*.luminera.ai'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Register routes
 app.use('/api/symbols', symbolsRouter);

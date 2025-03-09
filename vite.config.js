@@ -27,7 +27,9 @@ export default defineConfig({
       include: [
         /node_modules/,
       ]
-    }
+    },
+    sourcemap: true,
+    minify: false
   },
   resolve: {
     alias: {

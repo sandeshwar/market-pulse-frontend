@@ -4,9 +4,8 @@
   "version": "2.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite build --mode development --watch",
     "build": "vite build",
-    "preview": "vite preview",
     "build:extension": "vite build --outDir dist --emptyOutDir"
   },
   "dependencies": {

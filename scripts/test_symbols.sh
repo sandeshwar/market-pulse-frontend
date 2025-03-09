@@ -6,14 +6,17 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Server URL
-SERVER_URL="http://localhost:3000"
+# SERVER_URL="http://localhost:3000"
+SERVER_URL="https://luminera.ai/market-pulse"
 
 # Test function
 test_symbols_api() {
     local query=$1
     local endpoint="${SERVER_URL}/api/symbols/search?q=${query}"
     
+    
     echo "Testing symbol search for: ${query}"
+    echo "Endpoint URL: ${endpoint}"
     
     # Make the API call and capture the response
     response=$(curl -s "$endpoint")

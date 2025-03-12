@@ -13,7 +13,8 @@
 .list-group {
   background-color: var(--bg-primary);
   border-radius: var(--border-radius-md);
-  overflow: hidden;
+  /* Change from overflow: hidden to overflow: visible to allow dropdown to be visible */
+  overflow: visible;
   box-shadow: var(--shadow-sm);
   margin-bottom: var(--spacing-md);
   border: 1px solid var(--border-color);
@@ -205,6 +206,11 @@
   background-color: var(--bg-hover);
   border-bottom-left-radius: var(--border-radius-md);
   border-bottom-right-radius: var(--border-radius-md);
+  /* Ensure proper positioning for dropdown */
+  position: relative;
+  z-index: 5;
+  /* Prevent overflow from cutting off dropdown */
+  overflow: visible;
 }
 
 .input-wrapper {

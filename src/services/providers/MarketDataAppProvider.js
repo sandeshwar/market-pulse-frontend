@@ -192,17 +192,6 @@ export class MarketDataAppProvider {
             return data.results;
         } catch (apiError) {
             console.warn('API search failed, using fallback data:', apiError);
-
-            // Fallback to mock data for testing
-            const mockSymbols = this.getMockSymbols(query);
-
-            // Cache the mock results
-            this.searchCache.set(cacheKey, {
-                timestamp: Date.now(),
-                results: mockSymbols
-            });
-
-            return mockSymbols;
         }
     } catch (error) {
         console.error('Error searching symbols:', error);

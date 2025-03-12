@@ -1,0 +1,146 @@
+.symbol-search {
+    position: relative;
+    width: 100%;
+    margin-bottom: 8px;
+    /* Remove contain: layout as it can limit the dropdown visibility */
+    /* Ensure proper stacking context with a higher z-index */
+    z-index: 100;
+}
+
+.symbol-search .search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-sm, 4px);
+    font-size: 14px;
+    /* Prevent the input from moving */
+    position: relative;
+    z-index: 2;
+    /* Ensure the input has a stable height */
+    height: 36px;
+    box-sizing: border-box;
+    /* Match the app's theme */
+    background-color: var(--bg-primary, #121212);
+    color: var(--text-primary, #ffffff);
+    /* Add subtle transition for focus effect */
+    transition: all var(--transition-speed, 0.2s) var(--transition-easing, ease-in-out);
+}
+
+.symbol-search .search-input:focus {
+    outline: none;
+    border-color: var(--accent, #1890ff);
+    box-shadow: 0 0 0 1px var(--accent-transparent, rgba(24, 144, 255, 0.2));
+}
+
+.symbol-search .search-input::placeholder {
+    color: var(--text-tertiary, rgba(255, 255, 255, 0.4));
+}
+
+.symbol-search .search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    min-width: 300px; /* Ensure minimum width for dropdown */
+    max-height: 300px;
+    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: hidden; /* Hide horizontal overflow */
+    background: var(--bg-secondary, #1e1e1e); /* Match the app's dark theme */
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 4px);
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.3));
+    z-index: 10000; /* Very high z-index to ensure it appears above all elements */
+    margin: 0;
+    padding: 4px 0; /* Add some padding for better spacing */
+    list-style: none;
+    margin-top: 4px;
+    /* Ensure scrolling works properly */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    /* Fix for dropdown being cut off */
+    transform: translateY(0);
+    /* Ensure the dropdown is not affected by parent overflow settings */
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+    /* Add subtle backdrop blur for modern UI feel */
+    backdrop-filter: blur(8px);
+}
+
+.symbol-search .search-result-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: auto;
+    min-height: 44px; /* Increased minimum height for better visibility */
+    width: 100%;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.05));
+    /* Ensure text is fully visible */
+    line-height: 1.4;
+    /* Add transition for hover effects */
+    transition: all var(--transition-speed, 0.15s) var(--transition-easing, ease-in-out);
+    /* Add left border space for selected state */
+    border-left: 3px solid transparent;
+}
+
+.symbol-search .search-result-item:last-child {
+    border-bottom: none;
+}
+
+.symbol-search .search-result-item:hover {
+    background-color: var(--bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.symbol-search .search-result-item.selected {
+    background-color: var(--bg-hover, rgba(24, 144, 255, 0.1));
+    border-left: 3px solid var(--accent, #1890ff);
+    padding-left: 9px; /* Compensate for the border */
+}
+
+.symbol-search .symbol {
+    font-weight: 600;
+    margin-right: 12px;
+    flex-shrink: 0;
+    min-width: 60px;
+    font-size: 14px;
+    color: var(--text-primary, #ffffff);
+    font-family: var(--font-mono, monospace);
+    letter-spacing: 0.5px;
+}
+
+.symbol-search .name {
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    font-size: 13px;
+    max-width: 70%;
+}
+
+.symbol-search .symbol-search-loading {
+    padding: 10px;
+    text-align: center;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* Custom scrollbar styling to match theme */
+.symbol-search .search-results::-webkit-scrollbar {
+    width: 4px;
+}
+
+.symbol-search .search-results::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.symbol-search .search-results::-webkit-scrollbar-thumb {
+    background-color: var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-sm, 2px);
+}
+
+.symbol-search .search-results::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-tertiary, rgba(255, 255, 255, 0.2));
+}

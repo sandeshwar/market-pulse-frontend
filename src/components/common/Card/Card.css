@@ -1,7 +1,8 @@
 .card {
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius-lg);
-  overflow: hidden;
+  /* Change from overflow: hidden to overflow: visible to allow dropdowns to be fully visible */
+  overflow: visible;
   transition: transform var(--transition-speed) var(--transition-easing),
               box-shadow var(--transition-speed) var(--transition-easing);
 }
@@ -30,9 +31,13 @@
 
 .card__content {
   padding: var(--spacing-md) 0;
+  /* Ensure dropdowns can extend beyond the card content */
+  overflow: visible;
 }
 
 /* Keep regular padding for non-settings cards */
 .card:not(.settings-page .card) .card__content {
   padding: var(--spacing-md);
+  /* Ensure dropdowns can extend beyond the card content */
+  overflow: visible;
 }

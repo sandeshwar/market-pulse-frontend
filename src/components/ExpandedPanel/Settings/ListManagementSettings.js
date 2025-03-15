@@ -10,7 +10,6 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 
 let settingsElement = null;
-let suggestionTimeout = null;
 
 async function createListItem({ name, symbols = [], actions = [], showFooter = true }) {
   // Get real-time quotes for all symbols
@@ -154,44 +153,44 @@ function initializeSymbolSearch(containerElement, watchlistName) {
   );
 }
 
-export function createListManagementSettings() {
-  // Create element with loading state first
-  settingsElement = document.createElement('div');
-  settingsElement.innerHTML = `
-    <div class="list-management">
-      ${createCard({
-        title: 'Watchlists',
-        icon: ICONS.star,
-        content: '<div class="loading">Loading watchlists...</div>'
-      })}
-    </div>
-  `;
-  settingsElement = settingsElement.firstElementChild;
+// export function createListManagementSettings() {
+//   // Create element with loading state first
+//   settingsElement = document.createElement('div');
+//   settingsElement.innerHTML = `
+//     <div class="list-management">
+//       ${createCard({
+//         title: 'Watchlists',
+//         icon: ICONS.star,
+//         content: '<div class="loading">Loading watchlists...</div>'
+//       })}
+//     </div>
+//   `;
+//   settingsElement = settingsElement.firstElementChild;
 
-  // Add direct watchlist service listener
-  const handleWatchlistUpdate = async () => {
-    await updateWatchlistsUI();
-  };
-  watchlistService.addListener(handleWatchlistUpdate);
+//   // Add direct watchlist service listener
+//   const handleWatchlistUpdate = async () => {
+//     await updateWatchlistsUI();
+//   };
+//   watchlistService.addListener(handleWatchlistUpdate);
 
-  // Also listen for watchlist update events for backward compatibility
-  const settingsPage = document.querySelector('.settings-page');
-  if (settingsPage) {
-    settingsPage.addEventListener('watchlist-updated', handleWatchlistUpdate);
-  }
+//   // Also listen for watchlist update events for backward compatibility
+//   const settingsPage = document.querySelector('.settings-page');
+//   if (settingsPage) {
+//     settingsPage.addEventListener('watchlist-updated', handleWatchlistUpdate);
+//   }
 
-  // Cleanup function
-  settingsElement.cleanup = () => {
-    watchlistService.removeListener(handleWatchlistUpdate);
-    if (settingsPage) {
-      settingsPage.removeEventListener('watchlist-updated', handleWatchlistUpdate);
-    }
-  };
+//   // Cleanup function
+//   settingsElement.cleanup = () => {
+//     watchlistService.removeListener(handleWatchlistUpdate);
+//     if (settingsPage) {
+//       settingsPage.removeEventListener('watchlist-updated', handleWatchlistUpdate);
+//     }
+//   };
 
-  // Initialize after render
-  setTimeout(async () => {
-    await updateWatchlistsUI();
-  }, 0);
+//   // Initialize after render
+//   setTimeout(async () => {
+//     await updateWatchlistsUI();
+//   }, 0);
 
-  return settingsElement;
-}
+//   return settingsElement;
+// }

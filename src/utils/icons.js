@@ -24,5 +24,7 @@ export const ICONS = {
   tag: 'tag',
   plus: 'plus',
   alertTriangle: 'alert-triangle',
-  loader: 'loader'
+  loader: 'loader',
+  refreshCw: 'rotate-cw',
+  alertCircle: 'alert-circle',
 };

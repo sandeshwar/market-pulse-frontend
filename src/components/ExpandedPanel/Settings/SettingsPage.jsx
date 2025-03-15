@@ -20,8 +20,14 @@ export async function createSettingsPage() {
   watchlistCard.innerHTML = createCard({
     title: 'Watchlist',
     icon: ICONS.star,
-    content: '<div class="loading">Loading watchlist...</div>'
+    content: '<div class="loading"><div class="loading-spinner"></div><p>Loading your watchlist...</p></div>'
   });
+
+  // Add custom class to the card
+  const cardElement = watchlistCard.querySelector('.card');
+  if (cardElement) {
+    cardElement.classList.add('card--watchlist');
+  }
 
   settingsPage.appendChild(watchlistCard);
 
@@ -45,28 +51,42 @@ async function initializeWatchlistSettings(containerElement) {
     const symbolsList = watchlist.symbols && watchlist.symbols.length > 0
       ? `
         <div class="watchlist-symbols">
-          <h3>Symbols</h3>
-          <ul class="symbols-list">
+          <h3 class="watchlist-section-title">Your Symbols</h3>
+          <div class="symbols-grid">
             ${watchlist.symbols.map(symbol => `
-              <li class="symbol-item">
-                <span class="symbol-name">${symbol}</span>
-                <button class="btn btn--icon btn--delete"
-                  data-action="removeSymbol"
-                  data-symbol="${symbol}">
-                  <i data-feather="${ICONS.trash}"></i>
-                </button>
-              </li>
+              <div class="symbol-card">
+                <div class="symbol-card__content">
+                  <div class="symbol-card__header">
+                    <span class="symbol-ticker">${symbol}</span>
+                    <button class="btn btn--icon btn--delete"
+                      data-action="removeSymbol"
+                      data-symbol="${symbol}"
+                      title="Remove ${symbol}">
+                      <i data-feather="${ICONS.trash}"></i>
+                    </button>
+                  </div>
+                  <div class="symbol-card__details">
+                    <span class="symbol-label">Symbol</span>
+                  </div>
+                </div>
+              </div>
             `).join('')}
-          </ul>
+          </div>
         </div>
       `
-      : '<div class="empty-state">No symbols in watchlist</div>';
+      : `<div class="empty-state"><i data-feather="${ICONS.alertCircle}"></i><p>No symbols in your watchlist</p><p class="empty-state__hint">Use the search below to add symbols</p></div>`;
 
     // Render the content
     cardContent.innerHTML = `
       <div class="watchlist-content">
+        <div class="watchlist-header">
+          <p class="watchlist-description">Track your favorite symbols in one place</p>
+        </div>
         ${symbolsList}
-        <div class="symbol-search-container"></div>
+        <div class="watchlist-search-section">
+          <h3 class="watchlist-section-title">Add New Symbol</h3>
+          <div class="symbol-search-container"></div>
+        </div>
       </div>
     `;
 
@@ -97,7 +117,17 @@ async function initializeWatchlistSettings(containerElement) {
 
   } catch (error) {
     console.error('Error initializing watchlist settings:', error);
-    cardContent.innerHTML = '<div class="error">Failed to load watchlist</div>';
+    cardContent.innerHTML = `
+      <div class="error-state">
+        <i data-feather="${ICONS.alertTriangle}"></i>
+        <h3>Unable to load watchlist</h3>
+        <p>${error.message || 'An unexpected error occurred'}</p>
+        <button class="btn btn--primary btn--retry" onclick="location.reload()">
+          <i data-feather="${ICONS.refreshCw}"></i> Retry
+        </button>
+      </div>
+    `;
+    await replaceIcons();
   }
 }
 
@@ -124,7 +154,7 @@ function initializeSymbolSearch(containerElement) {
           });
       }}
       maxResults={6}
-      placeholder="Add symbol (e.g. AAPL)"
+      placeholder="Search and add symbol (e.g. AAPL)"
       autoFocus={true}
     />
   );

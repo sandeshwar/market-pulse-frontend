@@ -142,10 +142,27 @@ export function WatchlistCard() {
     // Load watchlist data on component mount
     const loadWatchlistData = async () => {
         try {
-            const watchlist = await ensureDefaultWatchlist();
-            setWatchlistData(watchlist);
+            // First check if any watchlists exist
+            const watchlists = await watchlistService.getWatchlists();
+
+            if (watchlists.length === 0) {
+                // No watchlists exist, create the default one
+                const newWatchlist = await watchlistService.createWatchlist(DEFAULT_WATCHLIST_NAME);
+                setWatchlistData(newWatchlist);
+            } else {
+                // Use the first watchlist (we only support one watchlist for now)
+                setWatchlistData(watchlists[0]);
+            }
         } catch (error) {
             console.error('Failed to load watchlist data:', error);
+            // Try to create the default watchlist as a fallback
+            try {
+                const newWatchlist = await watchlistService.createWatchlist(DEFAULT_WATCHLIST_NAME);
+                setWatchlistData(newWatchlist);
+            } catch (fallbackError) {
+                console.error('Failed to create default watchlist:', fallbackError);
+                alert('Failed to load or create watchlist. Please try refreshing the page.');
+            }
         }
     };
 
@@ -160,15 +177,34 @@ export function WatchlistCard() {
     }, []);
 
     const handleSymbolSelect = (symbol) => {
-        if (!watchlistData) return;
+        // If watchlistData is not available, ensure the default watchlist exists first
+        if (!watchlistData) {
+            ensureDefaultWatchlist()
+                .then(watchlist => {
+                    return watchlistService.addSymbol(DEFAULT_WATCHLIST_NAME, symbol.symbol);
+                })
+                .then(() => {
+                    // Refresh watchlist data
+                    loadWatchlistData();
+                })
+                .catch((error) => {
+                    console.error('Failed to add symbol:', error);
+                    alert('Failed to add symbol: ' + error.message);
+                });
+            return;
+        }
 
-        watchlistService.addSymbol(watchlistData.name, symbol.symbol)
+        // Use the watchlist name from watchlistData, or fall back to DEFAULT_WATCHLIST_NAME
+        const watchlistName = watchlistData.name || DEFAULT_WATCHLIST_NAME;
+
+        watchlistService.addSymbol(watchlistName, symbol.symbol)
             .then(() => {
                 // Refresh watchlist data
                 loadWatchlistData();
             })
             .catch((error) => {
                 console.error('Failed to add symbol:', error);
+                alert('Failed to add symbol: ' + error.message);
             });
     };
 

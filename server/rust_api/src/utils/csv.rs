@@ -33,14 +33,14 @@ pub fn read_symbols_from_csv<P: AsRef<Path>>(path: P) -> Result<SymbolCollection
             
             // Parse asset type
             let asset_type = match asset_type_str.to_uppercase().as_str() {
-                "EQUITY" => AssetType::Equity,
+                "STOCK" => AssetType::Stock,
                 "ETF" => AssetType::Etf,
                 "INDEX" => AssetType::Index,
-                "FOREX" => AssetType::Forex,
-                "CRYPTO" => AssetType::Crypto,
-                "FUTURE" => AssetType::Future,
-                "OPTION" => AssetType::Option,
-                "BOND" => AssetType::Bond,
+                // "FOREX" => AssetType::Forex,
+                // "CRYPTO" => AssetType::Crypto,
+                // "FUTURE" => AssetType::Future,
+                // "OPTION" => AssetType::Option,
+                // "BOND" => AssetType::Bond,
                 _ => AssetType::Other,
             };
             
@@ -51,7 +51,7 @@ pub fn read_symbols_from_csv<P: AsRef<Path>>(path: P) -> Result<SymbolCollection
     }
     
     Ok(SymbolCollection {
-        timestamp: Utc::now(),
+        timestamp: Some(Utc::now()),
         symbols,
     })
 }

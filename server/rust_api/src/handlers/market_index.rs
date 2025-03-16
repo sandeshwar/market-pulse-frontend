@@ -2,7 +2,7 @@ use axum::{
     extract::{Query, State},
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use crate::models::market_index::MarketIndicesCollection;
 use crate::models::error::{ApiError, ErrorResponse};
 use crate::AppState;

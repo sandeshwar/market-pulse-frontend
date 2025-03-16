@@ -2,9 +2,9 @@ use axum::{
     extract::{Query, State},
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use crate::models::symbol::SymbolSearchResponse;
-use crate::models::error::{ApiError, ErrorResponse};
+use crate::models::error::ErrorResponse;
 use crate::AppState;
 
 /// Query parameters for symbol search

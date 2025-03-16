@@ -34,6 +34,11 @@ impl MarketIndexService {
     
     /// Initializes the market indices
     async fn initialize_indices(&self) -> Result<(), ApiError> {
+        // Clear Redis cache to avoid deserialization issues during development
+        if let Err(e) = self.redis.delete("market_indices").await {
+            tracing::warn!("Failed to clear Redis market indices cache: {}", e);
+        }
+
         // Try to load from Redis first
         match self.redis.get::<MarketIndicesCollection>("market_indices").await {
             Ok(Some(collection)) => {
@@ -116,7 +121,7 @@ impl MarketIndexService {
         
         let collection = MarketIndicesCollection {
             indices: indices_map,
-            timestamp: Utc::now(),
+            timestamp: Some(Utc::now()),
         };
         
         // Update the indices collection

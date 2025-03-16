@@ -6,7 +6,7 @@ mod utils;
 use axum::{
     routing::get,
     Router,
-    http::{HeaderValue, Method},
+    http::Method,
 };
 use tower_http::{
     cors::{CorsLayer, Any},
@@ -54,10 +54,8 @@ async fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0], 3001));
     tracing::info!("Listening on {}", addr);
     
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 /// Application state shared across handlers

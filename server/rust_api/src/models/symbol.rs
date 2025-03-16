@@ -7,15 +7,21 @@ use std::collections::HashMap;
 pub struct Symbol {
     /// Unique ticker symbol (e.g., "AAPL")
     pub symbol: String,
-    
+
     /// Full name of the company or instrument (e.g., "Apple Inc.")
     pub name: String,
-    
+
     /// Exchange where the symbol is traded (e.g., "NASDAQ")
     pub exchange: String,
-    
+
     /// Type of asset (e.g., "STOCK", "ETF", "INDEX")
     pub asset_type: AssetType,
+
+    /// Industry sector (e.g., "Technology")
+    pub sector: Option<String>,
+
+    /// Specific industry (e.g., "Consumer Electronics")
+    pub industry: Option<String>,
 }
 
 /// Represents the type of financial asset
@@ -33,8 +39,9 @@ pub enum AssetType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SymbolCollection {
     /// Timestamp when the collection was last updated
-    pub timestamp: DateTime<Utc>,
-    
+    #[serde(with = "chrono::serde::ts_milliseconds_option", default)]
+    pub timestamp: Option<DateTime<Utc>>,
+
     /// List of symbols in the collection
     pub symbols: Vec<Symbol>,
 }
@@ -51,22 +58,23 @@ pub struct SymbolSearchResponse {
 pub struct SymbolPrice {
     /// Ticker symbol
     pub symbol: String,
-    
+
     /// Current price
     pub price: f64,
-    
+
     /// Change in price
     pub change: f64,
-    
+
     /// Percentage change
     pub percent_change: f64,
-    
+
     /// Trading volume
     pub volume: u64,
-    
+
     /// Timestamp of the price data
-    pub timestamp: DateTime<Utc>,
-    
+    #[serde(with = "chrono::serde::ts_milliseconds_option", default)]
+    pub timestamp: Option<DateTime<Utc>>,
+
     /// Additional data fields that might be available
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub additional_data: HashMap<String, serde_json::Value>,
@@ -77,9 +85,10 @@ pub struct SymbolPrice {
 pub struct BatchPriceResponse {
     /// Map of symbol to price data
     pub prices: HashMap<String, SymbolPrice>,
-    
+
     /// Timestamp when the data was retrieved
-    pub timestamp: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_milliseconds_option", default)]
+    pub timestamp: Option<DateTime<Utc>>,
 }
 
 impl Symbol {
@@ -124,23 +133,23 @@ impl SymbolCollection {
     /// Creates a new empty symbol collection
     pub fn new() -> Self {
         Self {
-            timestamp: Utc::now(),
+            timestamp: Some(Utc::now()),
             symbols: Vec::new(),
         }
     }
-    
+
     /// Creates a symbol collection with the provided symbols
     pub fn with_symbols(symbols: Vec<Symbol>) -> Self {
         Self {
-            timestamp: Utc::now(),
+            timestamp: Some(Utc::now()),
             symbols,
         }
     }
-    
+
     /// Adds a symbol to the collection
     pub fn add_symbol(&mut self, symbol: Symbol) {
         self.symbols.push(symbol);
-        self.timestamp = Utc::now();
+        self.timestamp = Some(Utc::now());
     }
     
     /// Searches for symbols matching the query in either symbol or name

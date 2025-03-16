@@ -37,6 +37,11 @@ impl SymbolService {
     
     /// Initializes the symbol cache from Redis or CSV
     async fn initialize_cache(&self) -> Result<(), ApiError> {
+        // Clear Redis cache to avoid deserialization issues during development
+        if let Err(e) = self.redis.delete("symbols").await {
+            tracing::warn!("Failed to clear Redis symbols cache: {}", e);
+        }
+
         // Try to load from Redis first
         match self.redis.get::<SymbolCollection>("symbols").await {
             Ok(Some(collection)) => {
@@ -52,23 +57,24 @@ impl SymbolService {
                 tracing::error!("Error loading symbols from Redis: {}", e);
             }
         }
-        
+
         // If Redis failed or had no data, load from CSV
         self.load_symbols_from_csv().await?;
-        
+
         // Save to Redis for future use
         let symbols = self.symbols.read().await;
         if let Err(e) = self.redis.set("symbols", &*symbols, Some(86400)).await {
             tracing::error!("Failed to save symbols to Redis: {}", e);
         }
-        
+
         Ok(())
     }
     
     /// Loads symbols from the CSV file
     async fn load_symbols_from_csv(&self) -> Result<(), ApiError> {
-        let csv_path = Path::new("data/symbols.csv");
-        
+        // Use the correct path relative to the server directory
+        let csv_path = Path::new("../data/symbols.csv");
+
         let file = File::open(csv_path)
             .map_err(|e| ApiError::InternalError(format!("Failed to open symbols CSV: {}", e)))?;
         
@@ -111,7 +117,7 @@ impl SymbolService {
         // Update the symbol collection
         let mut symbol_collection = self.symbols.write().await;
         *symbol_collection = SymbolCollection {
-            timestamp: Utc::now(),
+            timestamp: Some(Utc::now()),
             symbols,
         };
         

@@ -24,7 +24,8 @@ pub struct MarketIndex {
     pub status: MarketStatus,
     
     /// Timestamp of the index data
-    pub timestamp: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_milliseconds_option", default)]
+    pub timestamp: Option<DateTime<Utc>>,
 }
 
 /// Represents the current status of a market
@@ -66,7 +67,8 @@ pub struct MarketIndicesCollection {
     pub indices: HashMap<String, MarketIndex>,
     
     /// Timestamp when the collection was last updated
-    pub timestamp: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_milliseconds_option", default)]
+    pub timestamp: Option<DateTime<Utc>>,
 }
 
 /// Configuration for market indices
@@ -96,10 +98,10 @@ impl MarketIndex {
             change,
             percent_change,
             status,
-            timestamp: Utc::now(),
+            timestamp: Some(Utc::now()),
         }
     }
-    
+
     /// Determines if the index is currently showing positive performance
     pub fn is_positive(&self) -> bool {
         self.change >= 0.0
@@ -111,14 +113,14 @@ impl MarketIndicesCollection {
     pub fn new() -> Self {
         Self {
             indices: HashMap::new(),
-            timestamp: Utc::now(),
+            timestamp: Some(Utc::now()),
         }
     }
     
     /// Adds or updates an index in the collection
     pub fn upsert_index(&mut self, index: MarketIndex) {
         self.indices.insert(index.symbol.clone(), index);
-        self.timestamp = Utc::now();
+        self.timestamp = Some(Utc::now());
     }
     
     /// Gets an index by its symbol

@@ -1,7 +1,7 @@
 [package]
 name = "market_pulse_api"
 version = "0.1.0"
-edition = "2025"
+edition = "2021"
 description = "High-performance API for Market Pulse application (Chrome extension)"
 authors = ["Market Pulse Team - Luminera AI"]
 

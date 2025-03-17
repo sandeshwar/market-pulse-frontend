@@ -62,60 +62,60 @@ impl MarketIndexService {
         indices_map.insert(
             "SPX".to_string(),
             MarketIndex::new(
-                "SPX".to_string(),
-                "S&P 500".to_string(),
-                0.0,
-                0.0,
-                0.0,
-                MarketStatus::Closed,
+            "SPX".to_string(),
+            "S&P 500".to_string(),
+            4532.12,
+            45.23,
+            1.01,
+            MarketStatus::Closed,
             ),
         );
         
         indices_map.insert(
             "DJI".to_string(),
             MarketIndex::new(
-                "DJI".to_string(),
-                "Dow Jones".to_string(),
-                0.0,
-                0.0,
-                0.0,
-                MarketStatus::Closed,
+            "DJI".to_string(),
+            "Dow Jones".to_string(),
+            35721.34,
+            324.56,
+            0.92,
+            MarketStatus::Closed,
             ),
         );
         
         indices_map.insert(
             "IXIC".to_string(),
             MarketIndex::new(
-                "IXIC".to_string(),
-                "NASDAQ".to_string(),
-                0.0,
-                0.0,
-                0.0,
-                MarketStatus::Closed,
+            "IXIC".to_string(),
+            "NASDAQ".to_string(),
+            14897.23,
+            178.91,
+            1.21,
+            MarketStatus::Open,
             ),
         );
         
         indices_map.insert(
             "NDX".to_string(),
             MarketIndex::new(
-                "NDX".to_string(),
-                "NASDAQ 100".to_string(),
-                0.0,
-                0.0,
-                0.0,
-                MarketStatus::Closed,
+            "NDX".to_string(),
+            "NASDAQ 100".to_string(),
+            15632.45,
+            203.67,
+            1.32,
+            MarketStatus::Closed,
             ),
         );
         
         indices_map.insert(
             "VIX".to_string(),
             MarketIndex::new(
-                "VIX".to_string(),
-                "VIX".to_string(),
-                0.0,
-                0.0,
-                0.0,
-                MarketStatus::Closed,
+            "VIX".to_string(),
+            "VIX".to_string(),
+            18.45,
+            -0.87,
+            -4.51,
+            MarketStatus::Closed,
             ),
         );
         

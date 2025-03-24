@@ -1,6 +1,8 @@
 import { MARKET_HOURS } from '../constants/marketConstants.js';
 
 export function getMarketId(indexName) {
+  if (!indexName) return null;
+
   const normalizedName = indexName.toLowerCase();
   if (normalizedName.includes('s&p')) return 'NYSE';
   if (normalizedName.includes('nasdaq')) return 'NASDAQ';
@@ -14,17 +16,21 @@ export function isMarketOpen(marketId) {
 
   const now = new Date();
   const day = now.getDay();
-  
+
   // Check if it's a weekday
   if (!market.weekdays.includes(day)) return false;
-  
+
   // Convert current time to market timezone
-  const marketTime = now.toLocaleTimeString('en-US', { 
+  const marketTimeStr = now.toLocaleTimeString('en-US', {
     timeZone: market.timezone,
-    hour12: false 
+    hour12: false
   });
-  
-  return marketTime >= market.open && marketTime <= market.close;
+
+  // Extract hours and minutes for comparison
+  const [hours, minutes] = marketTimeStr.split(':');
+  const currentTimeFormatted = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+
+  return currentTimeFormatted >= market.open && currentTimeFormatted <= market.close;
 }
 
 export function getNextOpenTime(marketId) {

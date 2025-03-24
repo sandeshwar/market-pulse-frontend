@@ -43,27 +43,56 @@ export const MAX_RETRIES = 3;
 export const RETRY_DELAY = 2000;
 
 /**
- * Market hours configuration (in UTC)
+ * Market hours configuration
  */
 export const MARKET_HOURS = {
+  'NYSE': {
+    'open': '09:30',
+    'close': '16:00',
+    'weekdays': [1, 2, 3, 4, 5], // Monday to Friday
+    'timezone': 'America/New_York'
+  },
+  'NASDAQ': {
+    'open': '09:30',
+    'close': '16:00',
+    'weekdays': [1, 2, 3, 4, 5], // Monday to Friday
+    'timezone': 'America/New_York'
+  },
+  'DOW': {
+    'open': '09:30',
+    'close': '16:00',
+    'weekdays': [1, 2, 3, 4, 5], // Monday to Friday
+    'timezone': 'America/New_York'
+  },
+  // Keep the original indices for backward compatibility
   'SPX': {
-    'open': 930,
-    'close': 1600,
+    'open': '09:30',
+    'close': '16:00',
+    'weekdays': [1, 2, 3, 4, 5], // Monday to Friday
+    'timezone': 'America/New_York'
   },
   'DJI': {
-    'open': 930,
-    'close': 1600,
+    'open': '09:30',
+    'close': '16:00',
+    'weekdays': [1, 2, 3, 4, 5], // Monday to Friday
+    'timezone': 'America/New_York'
   },
   'IXIC': {
-    'open': 930,
-    'close': 1600,
+    'open': '09:30',
+    'close': '16:00',
+    'weekdays': [1, 2, 3, 4, 5], // Monday to Friday
+    'timezone': 'America/New_York'
   },
   'NDX': {
-    'open': 930,
-    'close': 1600,
+    'open': '09:30',
+    'close': '16:00',
+    'weekdays': [1, 2, 3, 4, 5], // Monday to Friday
+    'timezone': 'America/New_York'
   },
   'VIX': {
-    'open': 930,
-    'close': 1600,
+    'open': '09:30',
+    'close': '16:00',
+    'weekdays': [1, 2, 3, 4, 5], // Monday to Friday
+    'timezone': 'America/New_York'
   },
 };

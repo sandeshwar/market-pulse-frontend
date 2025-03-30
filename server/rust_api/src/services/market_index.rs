@@ -18,20 +18,20 @@ impl MarketIndexService {
     pub async fn new() -> Self {
         let redis = RedisManager::new()
             .expect("Failed to create Redis manager");
-        
+
         let service = Self {
             indices: Arc::new(RwLock::new(MarketIndicesCollection::new())),
             redis,
         };
-        
+
         // Initialize with default indices
         if let Err(e) = service.initialize_indices().await {
             tracing::error!("Failed to initialize market indices: {}", e);
         }
-        
+
         service
     }
-    
+
     /// Initializes the market indices
     async fn initialize_indices(&self) -> Result<(), ApiError> {
         // Clear Redis cache to avoid deserialization issues during development
@@ -54,10 +54,10 @@ impl MarketIndexService {
                 tracing::error!("Error loading indices from Redis: {}", e);
             }
         }
-        
+
         // Initialize with default indices
         let mut indices_map = HashMap::new();
-        
+
         // Add default indices with placeholder values
         indices_map.insert(
             "SPX".to_string(),

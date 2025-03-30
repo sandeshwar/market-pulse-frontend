@@ -15,13 +15,13 @@ impl RedisManager {
     pub fn new() -> Result<Self, RedisError> {
         let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
         let client = Client::open(redis_url)?;
-        
+
         Ok(Self {
             client: Arc::new(client),
             connection: Arc::new(Mutex::new(None)),
         })
     }
-    
+
     /// Gets a Redis connection, creating one if it doesn't exist
     pub async fn get_connection(&self) -> Result<redis::aio::Connection, RedisError> {
         let mut conn_guard = self.connection.lock().await;

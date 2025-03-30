@@ -94,9 +94,9 @@ pub struct BatchPriceResponse {
 impl Symbol {
     /// Creates a new Symbol instance
     pub fn new(
-        symbol: String, 
-        name: String, 
-        exchange: String, 
+        symbol: String,
+        name: String,
+        exchange: String,
         asset_type: AssetType
     ) -> Self {
         Self {
@@ -108,12 +108,12 @@ impl Symbol {
             industry: None,
         }
     }
-    
+
     /// Creates a new Symbol with sector and industry information
     pub fn with_classification(
-        symbol: String, 
-        name: String, 
-        exchange: String, 
+        symbol: String,
+        name: String,
+        exchange: String,
         asset_type: AssetType,
         sector: String,
         industry: String
@@ -139,6 +139,7 @@ impl SymbolCollection {
     }
 
     /// Creates a symbol collection with the provided symbols
+    #[allow(dead_code)]
     pub fn with_symbols(symbols: Vec<Symbol>) -> Self {
         Self {
             timestamp: Some(Utc::now()),
@@ -147,18 +148,19 @@ impl SymbolCollection {
     }
 
     /// Adds a symbol to the collection
+    #[allow(dead_code)]
     pub fn add_symbol(&mut self, symbol: Symbol) {
         self.symbols.push(symbol);
         self.timestamp = Some(Utc::now());
     }
-    
+
     /// Searches for symbols matching the query in either symbol or name
     pub fn search(&self, query: &str, limit: usize) -> Vec<Symbol> {
         let query = query.to_uppercase();
         self.symbols
             .iter()
             .filter(|s| {
-                s.symbol.contains(&query) || 
+                s.symbol.contains(&query) ||
                 s.name.to_uppercase().contains(&query)
             })
             .take(limit)

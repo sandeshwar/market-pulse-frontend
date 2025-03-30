@@ -7,22 +7,22 @@ use std::collections::HashMap;
 pub struct MarketIndex {
     /// Unique identifier for the index (e.g., "SPX", "DJI")
     pub symbol: String,
-    
+
     /// Full name of the index (e.g., "S&P 500", "Dow Jones Industrial Average")
     pub name: String,
-    
+
     /// Current value of the index
     pub value: f64,
-    
+
     /// Change in value since previous close
     pub change: f64,
-    
+
     /// Percentage change since previous close
     pub percent_change: f64,
-    
+
     /// Market status (open, closed, etc.)
     pub status: MarketStatus,
-    
+
     /// Timestamp of the index data
     #[serde(with = "chrono::serde::ts_milliseconds_option", default)]
     pub timestamp: Option<DateTime<Utc>>,
@@ -44,18 +44,18 @@ pub enum MarketStatus {
 pub struct MarketHours {
     /// Regular trading hours open time (in local market time)
     pub open: NaiveTime,
-    
+
     /// Regular trading hours close time (in local market time)
     pub close: NaiveTime,
-    
+
     /// Pre-market trading start time (if applicable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pre_market_open: Option<NaiveTime>,
-    
+
     /// After-hours trading end time (if applicable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub after_hours_close: Option<NaiveTime>,
-    
+
     /// Time zone identifier (e.g., "America/New_York")
     pub timezone: String,
 }

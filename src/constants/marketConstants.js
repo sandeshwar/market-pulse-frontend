@@ -1,7 +1,7 @@
 /**
  * Default refresh interval for market data (5 seconds)
  */
-export const DEFAULT_REFRESH_INTERVAL = 600000; // updated this for testing. TODO:: reset this to 5000
+export const DEFAULT_REFRESH_INTERVAL = 5000; // updated this for testing. TODO:: reset this to 5000
 
 
 /**

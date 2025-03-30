@@ -7,6 +7,7 @@ use crate::models::error::ApiError;
 use chrono::Utc;
 
 /// Reads symbols from a CSV file
+#[allow(dead_code)]
 pub fn read_symbols_from_csv<P: AsRef<Path>>(path: P) -> Result<SymbolCollection, ApiError> {
     let file = File::open(path)
         .map_err(|e| ApiError::InternalError(format!("Failed to open CSV file: {}", e)))?;

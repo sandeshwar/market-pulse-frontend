@@ -11,7 +11,7 @@
   "host_permissions": [
     "https://*.marketdata.app/*",
     "https://*.luminera.ai/*",
-    "http://localhost:3000/*"
+    "http://localhost/*"
   ],
   "action": {
     "default_popup": "index.html",

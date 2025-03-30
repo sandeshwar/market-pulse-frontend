@@ -12,7 +12,7 @@ use crate::AppState;
 pub struct SearchQuery {
     /// Search query string
     pub q: Option<String>,
-    
+
     /// Maximum number of results to return
     #[serde(default = "default_limit")]
     pub limit: usize,

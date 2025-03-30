@@ -1,6 +1,7 @@
 export const config = {
-  API_URL: process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:3000/api/'
-    : 'https://luminera.ai/market-pulse/api/',
-  API_KEY: 'VG1hV1pNclRSeUYtZ2N1S2kyeXhvanBKbloyUTVtVGl6a2VjemNpazFyYz0'
+  // API_URL: process.env.NODE_ENV === 'development'
+  //   ? 'http://localhost:3001/api/'
+  //   : 'https://luminera.ai/market-pulse/api/',
+  API_URL: 'http://localhost:3001/api/',
+  API_KEY: '3ca4d4d175e573187cb507b3349184ae94275781'
 };

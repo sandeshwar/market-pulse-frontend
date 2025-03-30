@@ -3,24 +3,28 @@ use thiserror::Error;
 
 /// API error types
 #[derive(Error, Debug)]
+#[allow(dead_code)]
 pub enum ApiError {
     #[error("Internal server error: {0}")]
     InternalError(String),
-    
+
     #[error("Database error: {0}")]
     DatabaseError(String),
-    
+
     #[error("Not found: {0}")]
     NotFound(String),
-    
+
     #[error("Invalid request: {0}")]
     InvalidRequest(String),
-    
+
     #[error("Rate limit exceeded")]
     RateLimitExceeded,
-    
+
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
+
+    #[error("External service error: {0}")]
+    ExternalServiceError(String),
 }
 
 /// Error response structure for the API
@@ -32,7 +36,7 @@ pub struct ErrorResponse {
     /// Optional error code
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
-    
+
     /// Optional additional details
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<String>,
@@ -40,6 +44,7 @@ pub struct ErrorResponse {
 
 impl ErrorResponse {
     /// Creates a new error response
+    #[allow(dead_code)]
     pub fn new(error: String) -> Self {
         Self {
             error,
@@ -47,7 +52,7 @@ impl ErrorResponse {
             details: None,
         }
     }
-    
+
     /// Creates a new error response with code
     pub fn with_code(error: String, code: String) -> Self {
         Self {
@@ -56,8 +61,9 @@ impl ErrorResponse {
             details: None,
         }
     }
-    
+
     /// Creates a new error response with code and details
+    #[allow(dead_code)]
     pub fn with_details(error: String, code: String, details: String) -> Self {
         Self {
             error,
@@ -71,28 +77,32 @@ impl From<ApiError> for ErrorResponse {
     fn from(error: ApiError) -> Self {
         match error {
             ApiError::InternalError(msg) => Self::with_code(
-                msg, 
+                msg,
                 "INTERNAL_ERROR".to_string()
             ),
             ApiError::DatabaseError(msg) => Self::with_code(
-                msg, 
+                msg,
                 "DATABASE_ERROR".to_string()
             ),
             ApiError::NotFound(msg) => Self::with_code(
-                msg, 
+                msg,
                 "NOT_FOUND".to_string()
             ),
             ApiError::InvalidRequest(msg) => Self::with_code(
-                msg, 
+                msg,
                 "INVALID_REQUEST".to_string()
             ),
             ApiError::RateLimitExceeded => Self::with_code(
-                "Rate limit exceeded".to_string(), 
+                "Rate limit exceeded".to_string(),
                 "RATE_LIMIT_EXCEEDED".to_string()
             ),
             ApiError::Unauthorized(msg) => Self::with_code(
-                msg, 
+                msg,
                 "UNAUTHORIZED".to_string()
+            ),
+            ApiError::ExternalServiceError(msg) => Self::with_code(
+                msg,
+                "EXTERNAL_SERVICE_ERROR".to_string()
             ),
         }
     }

@@ -21,20 +21,20 @@ impl SymbolService {
     pub async fn new() -> Self {
         let redis = RedisManager::new()
             .expect("Failed to create Redis manager");
-        
+
         let service = Self {
             symbols: Arc::new(RwLock::new(SymbolCollection::new())),
             redis,
         };
-        
+
         // Initialize the symbol cache
         if let Err(e) = service.initialize_cache().await {
             tracing::error!("Failed to initialize symbol cache: {}", e);
         }
-        
+
         service
     }
-    
+
     /// Initializes the symbol cache from Redis or CSV
     async fn initialize_cache(&self) -> Result<(), ApiError> {
         // Clear Redis cache to avoid deserialization issues during development

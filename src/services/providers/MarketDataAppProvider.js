@@ -77,9 +77,10 @@ export class MarketDataAppProvider {
   async getQuote(symbol) {
     try {
       await this.initialize();
-      
+
+      // Use our Rust API with Tiingo provider to fetch the quote
       const response = await fetch(
-        `https://api.marketdata.app/v1/stocks/quotes/${symbol}?token=${this.apiKey}`,
+        `${config.API_URL}market-data/prices?symbols=${symbol}`,
         {
           method: 'GET',
           headers: {
@@ -90,23 +91,25 @@ export class MarketDataAppProvider {
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          throw new Error('Invalid or expired API key');
+          throw new Error('Authentication error');
         }
         console.warn(`Failed to fetch quote for ${symbol}: ${response.status}`);
         return null;
       }
 
       const data = await response.json();
-      
-      if (data.s !== 'ok') {
-        console.warn(`Invalid response for ${symbol}: ${data.s}`);
+
+      if (!data || !data.prices || !data.prices[symbol]) {
+        console.warn(`No data returned for ${symbol}`);
         return null;
       }
 
-      const price = parseFloat(data.last?.[0]);
-      const change = parseFloat(data.ch?.[0] || 0);
-      const changePercent = parseFloat(data.chp?.[0] || 0);
-      const name = data.name?.[0] || symbol;
+      const symbolData = data.prices[symbol];
+      const price = parseFloat(symbolData.price);
+      const change = parseFloat(symbolData.change || 0);
+      const changePercent = parseFloat(symbolData.percent_change || 0);
+      // Use the symbol as name if not provided
+      const name = symbolData.name || symbol;
 
       if (isNaN(price)) {
         console.warn(`Invalid numeric data for ${symbol}`);

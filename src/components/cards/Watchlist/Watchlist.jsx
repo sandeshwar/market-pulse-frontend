@@ -79,10 +79,33 @@ export async function createWatchlistCard({ title = 'Watchlist' }) {
                 // Use the new bulk method to fetch all symbols at once
                 const quotes = await marketDataProvider.getMultipleStocks(watchlist.symbols);
 
+                // Log the quotes we received to help debug
+                console.log('Quotes received from marketDataProvider:', quotes);
+
                 // Transform the response into the expected format
                 stocksWithQuotes = watchlist.symbols.map(symbol => {
-                    const quote = quotes[symbol];
-                    if (!quote) return null;
+                    // Try to find the quote by exact symbol match first
+                    let quote = quotes[symbol];
+
+                    // If not found, try to find by checking if any returned symbol contains this symbol
+                    // This handles cases where the API returns "AAPL.US" but the watchlist has "AAPL"
+                    if (!quote) {
+                        const matchingSymbolKey = Object.keys(quotes).find(key =>
+                            key.includes(symbol) || symbol.includes(key.split('.')[0])
+                        );
+
+                        if (matchingSymbolKey) {
+                            console.log(`Found matching symbol: ${matchingSymbolKey} for requested symbol: ${symbol}`);
+                            quote = quotes[matchingSymbolKey];
+                        }
+                    }
+
+                    if (!quote) {
+                        console.warn(`No quote data found for symbol: ${symbol}`);
+                        return null;
+                    }
+
+                    console.log(`Processing quote for ${symbol}:`, quote);
 
                     return {
                         symbol,

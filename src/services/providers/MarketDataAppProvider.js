@@ -115,9 +115,26 @@ export class MarketDataAppProvider {
       // Process all returned symbols
       const result = {};
 
+      // Log the entire response for debugging
+      console.log('API Response data:', data);
+
       // Iterate through the requested symbols to maintain order and handle missing data
       for (const symbol of symbols) {
-        const symbolData = data.prices[symbol];
+        // Try to find the symbol data by exact match first
+        let symbolData = data.prices[symbol];
+
+        // If not found, try to find by checking if any returned symbol contains this symbol
+        // This handles cases where the API returns "AAPL.US" but the request was for "AAPL"
+        if (!symbolData) {
+          const matchingSymbolKey = Object.keys(data.prices).find(key =>
+            key.includes(symbol) || symbol.includes(key.split('.')[0])
+          );
+
+          if (matchingSymbolKey) {
+            console.log(`Found matching symbol in API response: ${matchingSymbolKey} for requested symbol: ${symbol}`);
+            symbolData = data.prices[matchingSymbolKey];
+          }
+        }
 
         // Skip if no data for this symbol
         if (!symbolData) {
@@ -136,11 +153,14 @@ export class MarketDataAppProvider {
           continue;
         }
 
+        // Log the data we're processing to help debug
+        console.log(`Processing symbol data for ${symbol}:`, symbolData);
+
         result[symbol] = {
           name,
           price,
           change,
-          changePercent
+          changePercent: changePercent // Make sure we're using the correct property name
         };
       }
 

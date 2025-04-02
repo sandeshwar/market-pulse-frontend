@@ -68,7 +68,7 @@ export async function createMarketIndicesCard() {
 		if (!isMounted) return;
 
 		try {
-			const indices = await marketDataService.getAvailableIndices();
+			const indices = await marketDataService.getAvailableIndices(); 
 			if (!isMounted) return;
 
 			if (!Array.isArray(indices) || indices.length === 0) {

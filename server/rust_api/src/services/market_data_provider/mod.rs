@@ -1,5 +1,3 @@
-pub mod paytm;
-pub mod paytm_websocket;
 pub mod tiingo;
 
 use crate::models::symbol::SymbolPrice;
@@ -28,27 +26,7 @@ pub trait RealTimeMarketDataProvider: Send + Sync {
     async fn unsubscribe(&self, symbols: &[String]) -> Result<(), ApiError>;
 }
 
-// Implement the trait for PaytmMoneyClient
-impl MarketDataProvider for paytm::PaytmMoneyClient {
-    async fn fetch_market_data(&self, symbols: &[String]) -> Result<Vec<SymbolPrice>, ApiError> {
-        self.fetch_market_data(symbols).await
-    }
 
-    async fn fetch_market_indices(&self, indices: &[String]) -> Result<Vec<MarketIndex>, ApiError> {
-        self.fetch_market_indices(indices).await
-    }
-}
-
-// Implement the real-time trait for PaytmWebSocketClient
-impl RealTimeMarketDataProvider for paytm_websocket::PaytmWebSocketClient {
-    async fn subscribe(&self, symbols: &[String]) -> Result<(), ApiError> {
-        self.subscribe(symbols).await
-    }
-
-    async fn unsubscribe(&self, symbols: &[String]) -> Result<(), ApiError> {
-        self.unsubscribe(symbols).await
-    }
-}
 
 // Implement the trait for TiingoClient
 impl MarketDataProvider for tiingo::TiingoClient {

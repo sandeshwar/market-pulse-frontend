@@ -1,31 +1,22 @@
 use crate::services::market_index_provider::provider::MarketIndexProvider;
-use crate::services::market_index_provider::wsj::WsjMarketIndexProvider;
-use crate::services::market_index_provider::google::GoogleMarketIndexProvider;
 use crate::models::market_index::MarketIndex;
 use crate::models::error::ApiError;
 use async_trait::async_trait;
 use std::sync::Arc;
+use chrono::Utc;
 
-/// Enum representing different market index provider types
-pub enum MarketIndexProviderType {
-    Wsj(WsjMarketIndexProvider),
-    Google(GoogleMarketIndexProvider),
-}
+/// A dummy provider that always returns empty results
+struct DummyProvider;
 
 #[async_trait]
-impl MarketIndexProvider for MarketIndexProviderType {
-    async fn fetch_market_indices(&self, indices: &[String]) -> Result<Vec<MarketIndex>, ApiError> {
-        match self {
-            MarketIndexProviderType::Wsj(provider) => provider.fetch_market_indices(indices).await,
-            MarketIndexProviderType::Google(provider) => provider.fetch_market_indices(indices).await,
-        }
+impl MarketIndexProvider for DummyProvider {
+    async fn fetch_market_indices(&self, _indices: &[String]) -> Result<Vec<MarketIndex>, ApiError> {
+        tracing::info!("Dummy provider: market indices are disabled for testing");
+        Ok(Vec::new())
     }
 
     fn provider_name(&self) -> &str {
-        match self {
-            MarketIndexProviderType::Wsj(provider) => provider.provider_name(),
-            MarketIndexProviderType::Google(provider) => provider.provider_name(),
-        }
+        "Dummy Provider (Testing Mode)"
     }
 }
 
@@ -33,17 +24,10 @@ impl MarketIndexProvider for MarketIndexProviderType {
 pub struct MarketIndexProviderFactory;
 
 impl MarketIndexProviderFactory {
-    /// Creates a new market index provider based on the provider name
-    pub fn create(provider_name: &str) -> Arc<MarketIndexProviderType> {
-        match provider_name.to_lowercase().as_str() {
-            "wsj" => Arc::new(MarketIndexProviderType::Wsj(WsjMarketIndexProvider::new())),
-            "google" => Arc::new(MarketIndexProviderType::Google(GoogleMarketIndexProvider::new())),
-            _ => {
-                // Default to WSJ provider
-                tracing::warn!("Unknown provider '{}', defaulting to WSJ", provider_name);
-                Arc::new(MarketIndexProviderType::Wsj(WsjMarketIndexProvider::new()))
-            }
-        }
+    /// Creates a new market index provider (currently always returns the dummy provider)
+    pub fn create(provider_name: &str) -> Arc<dyn MarketIndexProvider> {
+        tracing::info!("Market indices disabled for testing (requested provider: {})", provider_name);
+        Arc::new(DummyProvider)
     }
 
     /// Returns a list of available provider names

@@ -431,45 +431,15 @@ impl TiingoClient {
         Ok(Some(data.close))
     }
 
-    /// Fetches market index data
-    pub async fn fetch_market_indices(&self, indices: &[String]) -> Result<Vec<MarketIndex>, ApiError> {
-        if indices.is_empty() {
-            return Ok(Vec::new());
-        }
+    /// Tiingo doesn't support market indices directly
+    ///
+    /// This method is intentionally removed as Tiingo doesn't provide market index data.
+    /// Use dedicated market index providers like WsjMarketIndexProvider or GoogleMarketIndexProvider instead.
+    pub async fn fetch_market_indices(&self, _indices: &[String]) -> Result<Vec<MarketIndex>, ApiError> {
+        tracing::warn!("Tiingo does not support market indices directly. Use a dedicated market index provider instead.");
 
-        let mut results = Vec::new();
-
-        // Process each index individually
-        for index in indices {
-            // Clean the symbol (Tiingo doesn't use exchange suffixes)
-            let clean_symbol = self.clean_symbol(index);
-            
-            // For indices, we'll use EOD data since IEX doesn't cover all indices
-            match self.fetch_eod_data(&clean_symbol).await {
-                Ok(Some(price)) => {
-                    // Convert SymbolPrice to MarketIndex
-                    let index_data = MarketIndex {
-                        symbol: price.symbol,
-                        name: self.get_index_name(&clean_symbol),
-                        value: price.price,
-                        change: price.change,
-                        percent_change: price.percent_change,
-                        status: crate::models::market_index::MarketStatus::Open, // Default to Open
-                        timestamp: price.timestamp,
-                    };
-                    
-                    results.push(index_data);
-                },
-                Ok(None) => {
-                    tracing::warn!("No data available for index: {}", index);
-                },
-                Err(e) => {
-                    tracing::error!("Error fetching data for index {}: {}", index, e);
-                }
-            }
-        }
-
-        Ok(results)
+        // Return an empty vector since Tiingo can't provide this data
+        Ok(Vec::new())
     }
 
     /// Fetches metadata for a symbol
@@ -507,13 +477,33 @@ impl TiingoClient {
     }
 
     /// Cleans a symbol for use with Tiingo API
+    ///
+    /// According to Tiingo's documentation:
+    /// - They use hyphens ("-") instead of periods (".") for share classes
+    /// - They don't use forward slashes for currencies
+    /// - They have specific formats for preferred shares
     fn clean_symbol(&self, symbol: &str) -> String {
-        // Remove exchange suffix if present
+        // First, handle any exchange suffixes
         if let Some(idx) = symbol.find('.') {
-            symbol[0..idx].to_string()
-        } else {
-            symbol.to_string()
+            let exchange = &symbol[idx+1..];
+
+            // For US symbols, Tiingo doesn't use the exchange suffix
+            if exchange == "US" {
+                return symbol[0..idx].to_string();
+            }
+
+            // For other exchanges, convert to Tiingo's format (using hyphens instead of periods)
+            // Example: "BRK.A" becomes "BRK-A" in Tiingo
+            return symbol.replace('.', "-");
         }
+
+        // Handle any forward slashes (for currencies)
+        if symbol.contains('/') {
+            return symbol.replace('/', "");
+        }
+
+        // No special characters, return as is
+        symbol.to_string()
     }
 
     /// Formats a symbol for output, adding exchange information
@@ -526,15 +516,33 @@ impl TiingoClient {
         }
     }
 
-    /// Gets a display name for an index
+    /// Gets a display name for an index or ETF
     fn get_index_name(&self, symbol: &str) -> String {
+        // First check if this is an ETF proxy we recognize
         match symbol.to_uppercase().as_str() {
             "SPY" => "S&P 500 ETF".to_string(),
             "QQQ" => "NASDAQ-100 ETF".to_string(),
             "DIA" => "Dow Jones Industrial Average ETF".to_string(),
             "IWM" => "Russell 2000 ETF".to_string(),
             "VTI" => "Total Stock Market ETF".to_string(),
-            _ => format!("{} Index", symbol),
+            // Map ETF proxies back to their index names
+            _ => {
+                // Try to find a reverse mapping from ETF to index
+                let index_symbol = match symbol.to_uppercase().as_str() {
+                    "SPY" => "SPX",
+                    "QQQ" => "NDX",
+                    "DIA" => "DJI",
+                    "IWM" => "RUT",
+                    _ => symbol,
+                };
+
+                // Check if we have a display name for this index
+                if let Some(name) = crate::config::market_indices::get_index_display_name(index_symbol) {
+                    name
+                } else {
+                    format!("{} Index", symbol)
+                }
+            }
         }
     }
 }

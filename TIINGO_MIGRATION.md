@@ -43,7 +43,7 @@ Before running the application, you need to:
 - More reliable and consistent market data
 - Better documentation and support
 - More comprehensive API for historical data
-- Support for a wider range of market indices
+- Clear separation between stock data (Tiingo) and market indices data (WSJ)
 - Better performance and reliability
 
 ## Future Improvements

@@ -1,4 +1,4 @@
-use std::env;
+// This file is intentionally left empty to be removeduse std::env;
 use std::error::Error;
 use std::time::Duration;
 use dotenv::dotenv;

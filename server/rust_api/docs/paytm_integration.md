@@ -1,4 +1,4 @@
-# Paytm Money Market Data API Integration
+<!-- This file is intentionally left empty to be removed --># Paytm Money Market Data API Integration
 
 This document provides a comprehensive guide to the Paytm Money Market Data API integration in the Market Pulse application.
 

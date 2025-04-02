@@ -6,3 +6,8 @@ server/node_modules
 server/data/symbols.json
 server/dump.rdb
 server/rust_api/target/
+server/data/tiingo_stocks.csv
+server/data/tiingo_symbols.csv
+server/data/tiingo_symbols.zip
+server/rust_api/api_startup.log
+dump.rdb

@@ -52,10 +52,14 @@ impl MarketIndexProvider for WsjMarketIndexProvider {
         
         // Fetch the US market data page
         let url = format!("{}/us", self.base_url);
-        let response = self.client.get(&url)
-            .send()
-            .await
-            .map_err(|e| ApiError::ExternalServiceError(format!("WSJ request failed: {}", e)))?;
+        tracing::info!("Fetching market data from WSJ URL: {}", url);
+        let response = match self.client.get(&url).send().await {
+            Ok(resp) => resp,
+            Err(e) => {
+                tracing::error!("WSJ request failed: {}", e);
+                return Err(ApiError::ExternalServiceError(format!("WSJ request failed: {}", e)));
+            }
+        };
             
         if !response.status().is_success() {
             return Err(ApiError::ExternalServiceError(
@@ -63,12 +67,23 @@ impl MarketIndexProvider for WsjMarketIndexProvider {
             ));
         }
         
-        let html = response.text().await
-            .map_err(|e| ApiError::ExternalServiceError(format!("Failed to get WSJ response body: {}", e)))?;
+        tracing::info!("Got WSJ response, fetching body");
+        let html = match response.text().await {
+            Ok(text) => {
+                tracing::info!("Successfully retrieved WSJ HTML body (length: {})", text.len());
+                text
+            },
+            Err(e) => {
+                tracing::error!("Failed to get WSJ response body: {}", e);
+                return Err(ApiError::ExternalServiceError(format!("Failed to get WSJ response body: {}", e)));
+            }
+        };
             
         // Parse the HTML
+        tracing::info!("Parsing WSJ HTML document");
         let document = Html::parse_document(&html);
-        
+        tracing::info!("Successfully parsed WSJ HTML document");
+
         // Define selectors for the index table
         let table_selector = Selector::parse("table.WSJTables--table").unwrap();
         let row_selector = Selector::parse("tr").unwrap();

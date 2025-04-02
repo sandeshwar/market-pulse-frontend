@@ -105,7 +105,9 @@ async function initializeWatchlistSettings(containerElement) {
         const symbol = button.getAttribute('data-symbol');
 
         try {
-          await watchlistService.removeSymbol(DEFAULT_WATCHLIST_NAME, symbol);
+          // Get the actual watchlist first
+          const watchlist = await ensureDefaultWatchlist();
+          await watchlistService.removeSymbol(watchlist.name, symbol);
           // Refresh the UI
           await initializeWatchlistSettings(containerElement);
         } catch (error) {
@@ -139,8 +141,11 @@ function initializeSymbolSearch(containerElement) {
   root.render(
     <SymbolSearch
       onSelect={(symbol) => {
-        // Add the symbol to the default watchlist
-        watchlistService.addSymbol(DEFAULT_WATCHLIST_NAME, symbol.symbol)
+        // Get the actual watchlist first, then add the symbol
+        ensureDefaultWatchlist()
+          .then(watchlist => {
+            return watchlistService.addSymbol(watchlist.name, symbol.symbol);
+          })
           .then(() => {
             // Find the container element to refresh
             const container = containerElement.closest('.watchlist-settings');

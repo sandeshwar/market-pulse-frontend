@@ -2,7 +2,8 @@ use std::env;
 use std::error::Error;
 use std::time::{Duration, Instant};
 use dotenv::dotenv;
-use market_pulse_api::services::market_data::{MarketDataService, MarketDataProvider};
+use market_pulse_api::services::market_data::MarketDataProvider;
+use market_pulse_api::services::tiingo_market_data::TiingoMarketDataService;
 use tokio::time::sleep;
 
 #[tokio::main]
@@ -19,9 +20,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     check_env_vars();
     
     // Create the market data service
-    println!("\nInitializing Market Data Service...");
-    let market_service = MarketDataService::new();
-    println!("Market Data Service initialized");
+    println!("\nInitializing Tiingo Market Data Service...");
+    let market_service = TiingoMarketDataService::new();
+    println!("Tiingo Market Data Service initialized");
     
     // Test symbols
     let symbols = vec![
@@ -117,16 +118,13 @@ fn check_env_vars() {
     println!("Checking environment variables...");
     
     let required_vars = [
-        "PAYTM_API_KEY",
-        "PAYTM_ACCESS_TOKEN",
-        "PAYTM_PUBLIC_ACCESS_TOKEN",
+        "TIINGO_API_KEY",
     ];
-    
+
     let optional_vars = [
         "MARKET_DATA_CACHE_DURATION",
         "MARKET_DATA_STALE_THRESHOLD",
         "MARKET_DATA_UPDATE_INTERVAL",
-        "PAYTM_USE_WEBSOCKET",
     ];
     
     let mut all_required_present = true;

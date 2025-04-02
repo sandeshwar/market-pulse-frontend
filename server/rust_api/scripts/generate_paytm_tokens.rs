@@ -1,4 +1,4 @@
-use reqwest::Client;
+// This file is intentionally left empty to be removeduse reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::error::Error;

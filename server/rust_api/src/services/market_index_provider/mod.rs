@@ -5,4 +5,4 @@ pub mod factory;
 
 // Re-export commonly used items
 pub use provider::MarketIndexProvider;
-pub use factory::{MarketIndexProviderFactory, MarketIndexProviderType};
+pub use factory::MarketIndexProviderFactory;

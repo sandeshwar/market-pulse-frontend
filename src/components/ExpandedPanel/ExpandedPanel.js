@@ -6,21 +6,17 @@ import { createSettingsPage } from './Settings/SettingsPage.jsx';
 import { replaceIcons } from '../../utils/feather.js';
 
 
-// NOTE: disabled watchlistCard temporarily for development purposes
-// TODO:: enable watchlistCard when ready
 export async function createExpandedPanel() {
   // Create components that need cleanup
   const marketIndicesCard = await createMarketIndicesCard();
-  // const watchlistCard = await createWatchlistCard({ title: 'My Watchlist' });
-  // const allWatchlistsCard = await createWatchlistCard({ title: 'All Watchlists' });
+  const watchlistCard = await createWatchlistCard({ title: 'My Watchlist' });
   const newsCard = await createBreakingNewsCard();
   const settingsPage = await createSettingsPage();
   
   // Store cleanup functions
   const cleanupFunctions = new Set([
     marketIndicesCard.cleanup,
-    // watchlistCard.cleanup,
-    // allWatchlistsCard.cleanup,
+    watchlistCard.cleanup,
     newsCard.cleanup
   ]);
   
@@ -49,7 +45,7 @@ export async function createExpandedPanel() {
   homeTab.className = 'tab-content';
   homeTab.dataset.tab = 'home';
   homeTab.appendChild(marketIndicesCard.cloneNode(true));
-  // homeTab.appendChild(watchlistCard);
+  homeTab.appendChild(watchlistCard);
   panelContent.appendChild(homeTab);
   
   // Watchlists tab

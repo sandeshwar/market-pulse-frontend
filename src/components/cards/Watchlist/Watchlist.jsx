@@ -73,26 +73,29 @@ export async function createWatchlistCard({ title = 'Watchlist' }) {
                 return;
             }
 
-            // Get quotes for all symbols
-            const stocksWithQuotes = await Promise.all(
-                watchlist.symbols.map(async (symbol) => {
-                    try {
-                        const quote = await marketDataProvider.getQuote(symbol);
-                        if (!quote) return null;
+            // Get quotes for all symbols in a single API call
+            let stocksWithQuotes = [];
+            try {
+                // Use the new bulk method to fetch all symbols at once
+                const quotes = await marketDataProvider.getMultipleStocks(watchlist.symbols);
 
-                        return {
-                            symbol,
-                            name: quote.name || symbol,
-                            price: quote.price,
-                            change: quote.change,
-                            changePercent: quote.changePercent
-                        };
-                    } catch (error) {
-                        console.error(`Error fetching quote for ${symbol}:`, error);
-                        return null;
-                    }
-                })
-            );
+                // Transform the response into the expected format
+                stocksWithQuotes = watchlist.symbols.map(symbol => {
+                    const quote = quotes[symbol];
+                    if (!quote) return null;
+
+                    return {
+                        symbol,
+                        name: quote.name || symbol,
+                        price: quote.price,
+                        change: quote.change,
+                        changePercent: quote.changePercent
+                    };
+                });
+            } catch (error) {
+                console.error(`Error fetching quotes for watchlist:`, error);
+                stocksWithQuotes = [];
+            }
 
             if (!isMounted) return;
 

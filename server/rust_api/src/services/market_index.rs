@@ -1,16 +1,20 @@
 use crate::models::market_index::{MarketIndex, MarketIndicesCollection, MarketStatus};
 use crate::models::error::ApiError;
 use crate::services::redis::RedisManager;
+use crate::config::market_indices;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::collections::HashMap;
 use chrono::Utc;
+
+use crate::services::market_index_provider::provider::MarketIndexProvider;
 
 /// Service for managing market indices
 #[derive(Clone)]
 pub struct MarketIndexService {
     indices: Arc<RwLock<MarketIndicesCollection>>,
     redis: RedisManager,
+    provider: Arc<RwLock<Option<Arc<dyn MarketIndexProvider>>>>,
 }
 
 impl MarketIndexService {
@@ -22,6 +26,7 @@ impl MarketIndexService {
         let service = Self {
             indices: Arc::new(RwLock::new(MarketIndicesCollection::new())),
             redis,
+            provider: Arc::new(RwLock::new(None)),
         };
 
         // Initialize with default indices
@@ -55,70 +60,9 @@ impl MarketIndexService {
             }
         }
 
-        // Initialize with default indices
-        let mut indices_map = HashMap::new();
+        // Initialize with default indices from centralized configuration
+        let indices_map = market_indices::create_default_indices();
 
-        // Add default indices with placeholder values
-        indices_map.insert(
-            "SPX".to_string(),
-            MarketIndex::new(
-            "SPX".to_string(),
-            "S&P 500".to_string(),
-            4532.12,
-            45.23,
-            1.01,
-            MarketStatus::Closed,
-            ),
-        );
-        
-        indices_map.insert(
-            "DJI".to_string(),
-            MarketIndex::new(
-            "DJI".to_string(),
-            "Dow Jones".to_string(),
-            35721.34,
-            324.56,
-            0.92,
-            MarketStatus::Closed,
-            ),
-        );
-        
-        indices_map.insert(
-            "IXIC".to_string(),
-            MarketIndex::new(
-            "IXIC".to_string(),
-            "NASDAQ".to_string(),
-            14897.23,
-            178.91,
-            1.21,
-            MarketStatus::Open,
-            ),
-        );
-        
-        indices_map.insert(
-            "NDX".to_string(),
-            MarketIndex::new(
-            "NDX".to_string(),
-            "NASDAQ 100".to_string(),
-            15632.45,
-            203.67,
-            1.32,
-            MarketStatus::Closed,
-            ),
-        );
-        
-        indices_map.insert(
-            "VIX".to_string(),
-            MarketIndex::new(
-            "VIX".to_string(),
-            "VIX".to_string(),
-            18.45,
-            -0.87,
-            -4.51,
-            MarketStatus::Closed,
-            ),
-        );
-        
         let collection = MarketIndicesCollection {
             indices: indices_map,
             timestamp: Some(Utc::now()),
@@ -152,12 +96,87 @@ impl MarketIndexService {
     pub async fn update_index(&self, index: MarketIndex) -> Result<(), ApiError> {
         let mut indices = self.indices.write().await;
         indices.upsert_index(index);
-        
+
         // Save to Redis
         if let Err(e) = self.redis.set("market_indices", &*indices, Some(3600)).await {
             tracing::error!("Failed to save updated indices to Redis: {}", e);
         }
-        
+
+        Ok(())
+    }
+
+    /// Sets the market index provider
+    pub async fn set_provider(&self, provider: Arc<dyn MarketIndexProvider>) -> Result<(), ApiError> {
+        let mut provider_lock = self.provider.write().await;
+        *provider_lock = Some(provider.clone());
+
+        tracing::info!("Market index provider set to: {}", provider.provider_name());
+
+        // Try to refresh indices but don't fail if it doesn't work
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            self.refresh_indices()
+        ).await {
+            Ok(Ok(_)) => {
+                tracing::info!("Successfully refreshed market indices");
+                Ok(())
+            },
+            Ok(Err(e)) => {
+                tracing::warn!("Failed to refresh market indices: {}. Will use default values.", e);
+                Ok(()) // Continue despite the error
+            },
+            Err(_) => {
+                tracing::warn!("Market index refresh timed out. Will use default values.");
+                Ok(()) // Continue despite the timeout
+            }
+        }
+    }
+
+    /// Refreshes market indices using the provider
+    pub async fn refresh_indices(&self) -> Result<(), ApiError> {
+        // Get all index symbols
+        let symbols = market_indices::get_all_index_symbols();
+
+        // Check if we have a provider
+        let provider_lock = self.provider.read().await;
+        let provider = match &*provider_lock {
+            Some(p) => p.clone(),
+            None => {
+                tracing::warn!("No market index provider set, using default values");
+                return Ok(());
+            }
+        };
+// Fetch indices from the provider with timeout
+tracing::info!("Refreshing market indices using provider: {}", provider.provider_name());
+let indices_data = tokio::time::timeout(
+    std::time::Duration::from_secs(30),
+    provider.fetch_market_indices(&symbols)
+).await
+.map_err(|_| {
+    tracing::error!("Timeout while fetching market indices");
+    ApiError::InternalError("Market index provider timed out".to_string())
+})??;
+
+
+        if indices_data.is_empty() {
+            tracing::warn!("Provider returned no indices");
+            return Ok(());
+        }
+
+        // Update our indices collection
+        let mut indices = self.indices.write().await;
+
+        for index in indices_data {
+            indices.upsert_index(index);
+        }
+
+        // Save to Redis
+        if let Err(e) = self.redis.set("market_indices", &*indices, Some(3600)).await {
+            tracing::error!("Failed to save updated indices to Redis: {}", e);
+        }
+
+        tracing::info!("Updated {} market indices", indices.indices.len());
+
         Ok(())
     }
 }

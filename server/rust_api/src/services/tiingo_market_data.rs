@@ -76,15 +76,33 @@ impl TiingoMarketDataService {
 
         tracing::info!("Starting market data background updater with interval of {} seconds", update_interval);
 
+        // Spawn the background task with immediate first update
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(StdDuration::from_secs(update_interval));
+            tracing::info!("Starting initial market data update");
+            
+            // Try initial update with timeout
+            match tokio::time::timeout(
+                StdDuration::from_secs(30),
+                service.update_all_cached_data()
+            ).await {
+                Ok(Ok(_)) => tracing::info!("Initial market data update completed successfully"),
+                Ok(Err(e)) => tracing::error!("Initial market data update failed: {}", e),
+                Err(_) => tracing::error!("Initial market data update timed out after 30 seconds"),
+            }
 
+            let mut interval = tokio::time::interval(StdDuration::from_secs(update_interval));
+            
             loop {
                 interval.tick().await;
 
                 tracing::debug!("Running scheduled market data update");
-                if let Err(e) = service.update_all_cached_data().await {
-                    tracing::error!("Scheduled market data update failed: {}", e);
+                match tokio::time::timeout(
+                    StdDuration::from_secs(30),
+                    service.update_all_cached_data()
+                ).await {
+                    Ok(Ok(_)) => tracing::debug!("Scheduled market data update completed"),
+                    Ok(Err(e)) => tracing::error!("Scheduled market data update failed: {}", e),
+                    Err(_) => tracing::error!("Scheduled market data update timed out after 30 seconds"),
                 }
             }
         });
@@ -130,6 +148,18 @@ impl MarketDataProvider for TiingoMarketDataService {
         // Fetch missing symbols from the provider
         if !symbols_to_fetch.is_empty() {
             let fresh_prices = self.provider.fetch_market_data(&symbols_to_fetch).await?;
+
+            // Check if we got any results back
+            if fresh_prices.is_empty() && !symbols_to_fetch.is_empty() {
+                tracing::warn!("No data returned from Tiingo for symbols: {:?}", symbols_to_fetch);
+
+                // Return a specific error if no symbols were found
+                if cached_prices.is_empty() {
+                    return Err(ApiError::NotFound(format!(
+                        "No data available for the requested symbols. They may not be supported by Tiingo."
+                    )));
+                }
+            }
 
             // Cache the fresh data
             for price in &fresh_prices {

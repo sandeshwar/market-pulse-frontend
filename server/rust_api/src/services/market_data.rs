@@ -2,8 +2,6 @@ use crate::models::symbol::{SymbolPrice, BatchPriceResponse};
 use crate::models::market_index::{MarketIndex, MarketIndicesCollection};
 use crate::models::error::ApiError;
 use crate::services::redis::RedisManager;
-use crate::services::market_data_provider::paytm::PaytmMoneyClient;
-use crate::services::market_data_provider::paytm_websocket::PaytmWebSocketClient;
 use std::sync::Arc;
 use std::collections::HashMap;
 use tokio::sync::Mutex;
@@ -49,7 +47,6 @@ pub trait MarketDataProvider: Send + Sync + 'static {
 /// Enum that can hold any of the market data provider implementations
 #[derive(Clone)]
 pub enum MarketDataProviderEnum {
-    Paytm(Arc<MarketDataService>),
     Tiingo(Arc<crate::services::tiingo_market_data::TiingoMarketDataService>),
 }
 
@@ -57,9 +54,6 @@ impl MarketDataProviderEnum {
     /// Starts the background update task
     pub async fn start_background_updater(provider: Arc<Self>) {
         match &*provider {
-            MarketDataProviderEnum::Paytm(service) => {
-                MarketDataService::start_background_updater(service.clone()).await;
-            },
             MarketDataProviderEnum::Tiingo(service) => {
                 crate::services::tiingo_market_data::TiingoMarketDataService::start_background_updater(service.clone()).await;
             },
@@ -69,9 +63,6 @@ impl MarketDataProviderEnum {
     /// Starts the WebSocket listener for real-time updates
     pub async fn start_websocket_listener(provider: Arc<Self>) {
         match &*provider {
-            MarketDataProviderEnum::Paytm(service) => {
-                MarketDataService::start_websocket_listener(service.clone()).await;
-            },
             MarketDataProviderEnum::Tiingo(service) => {
                 crate::services::tiingo_market_data::TiingoMarketDataService::start_websocket_listener(service.clone()).await;
             },
@@ -83,63 +74,54 @@ impl MarketDataProviderEnum {
 impl MarketDataProvider for MarketDataProviderEnum {
     async fn get_symbol_prices(&self, symbols: &[String]) -> Result<BatchPriceResponse, ApiError> {
         match self {
-            MarketDataProviderEnum::Paytm(service) => service.get_symbol_prices(symbols).await,
             MarketDataProviderEnum::Tiingo(service) => service.get_symbol_prices(symbols).await,
         }
     }
 
     async fn get_market_indices(&self, indices: &[String]) -> Result<MarketIndicesCollection, ApiError> {
         match self {
-            MarketDataProviderEnum::Paytm(service) => service.get_market_indices(indices).await,
             MarketDataProviderEnum::Tiingo(service) => service.get_market_indices(indices).await,
         }
     }
 
     async fn track_accessed_symbols(&self, symbols: &[String]) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Paytm(service) => service.track_accessed_symbols(symbols).await,
             MarketDataProviderEnum::Tiingo(service) => service.track_accessed_symbols(symbols).await,
         }
     }
 
     async fn get_symbols_to_update(&self) -> Result<Vec<String>, ApiError> {
         match self {
-            MarketDataProviderEnum::Paytm(service) => service.get_symbols_to_update().await,
             MarketDataProviderEnum::Tiingo(service) => service.get_symbols_to_update().await,
         }
     }
 
     async fn get_indices_to_update(&self) -> Result<Vec<String>, ApiError> {
         match self {
-            MarketDataProviderEnum::Paytm(service) => service.get_indices_to_update().await,
             MarketDataProviderEnum::Tiingo(service) => service.get_indices_to_update().await,
         }
     }
 
     async fn remove_stale_symbols(&self) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Paytm(service) => service.remove_stale_symbols().await,
             MarketDataProviderEnum::Tiingo(service) => service.remove_stale_symbols().await,
         }
     }
 
     async fn update_all_cached_data(&self) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Paytm(service) => service.update_all_cached_data().await,
             MarketDataProviderEnum::Tiingo(service) => service.update_all_cached_data().await,
         }
     }
 
     async fn subscribe_to_symbols(&self, symbols: &[String]) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Paytm(service) => service.subscribe_to_symbols(symbols).await,
             MarketDataProviderEnum::Tiingo(service) => service.subscribe_to_symbols(symbols).await,
         }
     }
 
     async fn unsubscribe_from_symbols(&self, symbols: &[String]) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Paytm(service) => service.unsubscribe_from_symbols(symbols).await,
             MarketDataProviderEnum::Tiingo(service) => service.unsubscribe_from_symbols(symbols).await,
         }
     }
@@ -154,155 +136,10 @@ const MARKET_INDEX_PREFIX: &str = "market_data:index:";
 /// Key for tracking accessed symbols
 const ACCESSED_SYMBOLS_KEY: &str = "market_data:accessed_symbols";
 
-/// Service for managing market data
-#[derive(Clone)]
-pub struct MarketDataService {
-    redis: RedisManager,
-    provider: Arc<PaytmMoneyClient>,
-    realtime_provider: Option<Arc<PaytmWebSocketClient>>,
-    cache_duration: i64,
-    stale_threshold: i64,
-    update_lock: Arc<Mutex<()>>,
-    use_websocket: bool,
-}
+// MarketDataService implementation has been removed as part of Paytm provider removal
 
-impl MarketDataService {
-    /// Creates a new market data service
-    pub fn new() -> Self {
-        let redis = RedisManager::new()
-            .expect("Failed to create Redis manager");
-
-        // Get configuration from environment variables
-        let api_key = env::var("PAYTM_API_KEY")
-            .unwrap_or_else(|_| "demo_api_key".to_string());
-
-        let access_token = env::var("PAYTM_ACCESS_TOKEN")
-            .unwrap_or_else(|_| "demo_access_token".to_string());
-
-        let public_access_token = env::var("PAYTM_PUBLIC_ACCESS_TOKEN")
-            .unwrap_or_else(|_| "demo_public_access_token".to_string());
-
-        let cache_duration = env::var("MARKET_DATA_CACHE_DURATION")
-            .ok()
-            .and_then(|s| s.parse::<i64>().ok())
-            .unwrap_or(60); // Default to 60 seconds
-
-        let stale_threshold = env::var("MARKET_DATA_STALE_THRESHOLD")
-            .ok()
-            .and_then(|s| s.parse::<i64>().ok())
-            .unwrap_or(300); // Default to 5 minutes
-
-        let use_websocket = env::var("PAYTM_USE_WEBSOCKET")
-            .ok()
-            .and_then(|s| s.parse::<bool>().ok())
-            .unwrap_or(false); // Default to not using WebSocket
-
-        // Create the Paytm REST API provider
-        let mut paytm_client = PaytmMoneyClient::new(api_key.clone());
-        paytm_client.set_access_token(access_token.clone(), public_access_token.clone());
-        let provider = Arc::new(paytm_client);
-
-        // Create the WebSocket provider if enabled
-        let realtime_provider = if use_websocket {
-            Some(Arc::new(PaytmWebSocketClient::new(
-                api_key,
-                access_token,
-                public_access_token,
-            )))
-        } else {
-            None
-        };
-
-        Self {
-            redis,
-            provider,
-            realtime_provider,
-            cache_duration,
-            stale_threshold,
-            update_lock: Arc::new(Mutex::new(())),
-            use_websocket,
-        }
-    }
-    
-    /// Starts the background update task
-    pub async fn start_background_updater(service: Arc<Self>) {
-        let update_interval = env::var("MARKET_DATA_UPDATE_INTERVAL")
-            .ok()
-            .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(60); // Default to 60 seconds
-
-        tracing::info!("Starting market data background updater with interval of {} seconds", update_interval);
-
-        // Start the WebSocket connection if enabled
-        if service.use_websocket {
-            Self::start_websocket_listener(service.clone()).await;
-        }
-
-        tokio::spawn(async move {
-            let mut interval = tokio::time::interval(StdDuration::from_secs(update_interval));
-
-            loop {
-                interval.tick().await;
-
-                tracing::debug!("Running scheduled market data update");
-                if let Err(e) = service.update_all_cached_data().await {
-                    tracing::error!("Scheduled market data update failed: {}", e);
-                }
-            }
-        });
-    }
-
-    /// Starts the WebSocket listener for real-time updates
-    pub async fn start_websocket_listener(service: Arc<Self>) {
-        if let Some(_realtime_provider) = &service.realtime_provider {
-            // Clone the Arc-wrapped service for the task
-            let service_clone = service.clone();
-
-            // Start the WebSocket in a separate task
-            tokio::spawn(async move {
-                // Create a mutable clone of the WebSocket client
-                let mut ws_client = PaytmWebSocketClient::new(
-                    env::var("PAYTM_API_KEY").unwrap_or_else(|_| "demo_api_key".to_string()),
-                    env::var("PAYTM_ACCESS_TOKEN").unwrap_or_else(|_| "demo_access_token".to_string()),
-                    env::var("PAYTM_PUBLIC_ACCESS_TOKEN").unwrap_or_else(|_| "demo_public_access_token".to_string()),
-                );
-
-                // Start the WebSocket connection
-                match ws_client.start().await {
-                    Ok(mut rx) => {
-                        tracing::info!("Started Paytm WebSocket connection");
-
-                        // Get the initial list of symbols to subscribe to
-                        let symbols = service_clone.get_symbols_to_update().await
-                            .unwrap_or_else(|_| Vec::new());
-
-                        if !symbols.is_empty() {
-                            tracing::info!("Subscribing to {} symbols via WebSocket", symbols.len());
-                            if let Err(e) = ws_client.subscribe(&symbols).await {
-                                tracing::error!("Failed to subscribe to symbols: {}", e);
-                            }
-                        }
-
-                        // Process incoming price updates
-                        while let Some(price) = rx.recv().await {
-                            // Cache the price update
-                            let key = format!("{}{}", SYMBOL_PRICE_PREFIX, price.symbol);
-                            if let Err(e) = service_clone.redis.set(&key, &price, Some(service_clone.cache_duration as usize)).await {
-                                tracing::error!("Failed to cache real-time price update for {}: {}", price.symbol, e);
-                            }
-                        }
-                    },
-                    Err(e) => {
-                        tracing::error!("Failed to start WebSocket connection: {}", e);
-                    }
-                }
-            });
-        } else {
-            tracing::info!("WebSocket is disabled, not starting listener");
-        }
-    }
-}
-
+// MarketDataService has been removed as part of Paytm provider removal
+/*
 #[async_trait]
 impl MarketDataProvider for MarketDataService {
     /// Gets price data for a list of symbols
@@ -639,3 +476,4 @@ impl MarketDataProvider for MarketDataService {
         Ok(())
     }
 }
+*/

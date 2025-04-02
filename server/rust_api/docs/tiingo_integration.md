@@ -7,8 +7,9 @@ This document provides a comprehensive guide to the Tiingo Market Data API integ
 The integration with Tiingo's Market Data API allows our application to:
 
 1. Fetch real-time and end-of-day market data for stocks and ETFs
-2. Access market indices data (via ETF proxies)
-3. Efficiently cache and manage market data
+2. Efficiently cache and manage market data
+
+Note: Market indices data is NOT provided by Tiingo but instead comes from dedicated market index providers (WSJ and Google Finance).
 
 ## Setup and Configuration
 
@@ -67,23 +68,52 @@ let market_service = TiingoMarketDataService::new();
 let symbols = vec!["AAPL".to_string(), "MSFT".to_string()];
 let prices = market_service.get_symbol_prices(&symbols).await?;
 
-// Fetch market indices (using ETF proxies)
-let indices = vec!["SPY".to_string(), "QQQ".to_string()];
-let indices_data = market_service.get_market_indices(&indices).await?;
+// Note: For market indices, use the dedicated MarketIndexService instead:
+// let market_index_service = MarketIndexService::new().await;
+// let indices_data = market_index_service.get_all_indices().await?;
 ```
 
 ## Symbol Format
 
-Tiingo uses a simple format for symbols:
+Tiingo uses a specific format for symbols:
 
 - Stocks: Standard ticker symbols (e.g., `AAPL`, `MSFT`)
 - ETFs: Standard ticker symbols (e.g., `SPY`, `QQQ`)
-- Indices: Represented by their ETF proxies:
-  - S&P 500: `SPY`
-  - NASDAQ-100: `QQQ`
-  - Dow Jones Industrial Average: `DIA`
 
-Our integration handles the formatting of these symbols automatically.
+### Market Indices
+
+**Important Note**: Tiingo does not provide market index data through their API. After reviewing their documentation, we've confirmed that they only offer stock, ETF, and cryptocurrency data.
+
+For market indices, please use the dedicated market index providers:
+
+1. `WsjMarketIndexProvider` - Uses Wall Street Journal data for major indices
+2. `GoogleMarketIndexProvider` - Uses Google Finance data for indices
+
+The Tiingo client will return an empty result set if asked for market indices, with a warning log message directing you to use the appropriate provider.
+
+### Tiingo Symbology
+
+According to Tiingo's documentation, they use a specific symbology format:
+
+1. **Share Classes**: They use hyphens (`-`) instead of periods (`.`)
+   - Example: `BRK.A` becomes `BRK-A` in Tiingo
+
+2. **Preferred Shares**: They use the format `{SYMBOL}-P-{SHARE CLASS}`
+   - Example: Simon Property Group's Preferred J series would be `SPG-P-J`
+
+3. **Currencies**: They remove forward slashes
+   - Example: `EUR/USD` becomes `EURUSD`
+
+Our implementation automatically handles these conversions when making requests to Tiingo.
+
+### Error Handling
+
+The Tiingo client includes robust error handling for stock and ETF data:
+
+1. Handles API errors gracefully with detailed error messages
+2. Provides fallback to EOD data when real-time data is unavailable
+3. Logs detailed information about any failures
+4. Returns appropriate error types that can be handled by the calling code
 
 ## Data Sources
 
@@ -131,6 +161,8 @@ All errors are properly logged and propagated through the `ApiError` type.
    - Ensure the symbols are in the correct format
    - Check if the market is open (real-time data is only available during market hours)
    - Verify that the security is covered by Tiingo
+   - For market indices, use a dedicated market index provider instead of Tiingo
+   - Remember that Tiingo only supports stocks, ETFs, and cryptocurrencies
 
 3. **Performance Issues**
    - Adjust cache duration settings

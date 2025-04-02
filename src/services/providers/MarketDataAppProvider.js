@@ -10,13 +10,13 @@ export class MarketDataAppProvider {
 
   async initialize() {
     if (this.initialized) return;
-    
+
     this.apiKey = config.API_KEY;
-    
+
     if (!this.apiKey) {
       throw new Error('API key not configured');
     }
-    
+
     this.initialized = true;
   }
 
@@ -24,7 +24,7 @@ export class MarketDataAppProvider {
     try {
       await this.initialize();
 
-      // Use our Rust API to fetch all market indices at once
+      // Use our dedicated market indices API endpoint
       const response = await fetch(
         `${config.API_URL}indices`,
         {
@@ -74,13 +74,21 @@ export class MarketDataAppProvider {
     }
   }
 
-  async getQuote(symbol) {
+  async getMultipleStocks(symbols) {
+    if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
+      console.warn('Invalid symbols parameter:', symbols);
+      return {};
+    }
+
     try {
       await this.initialize();
 
-      // Use our Rust API with Tiingo provider to fetch the quote
+      // Join all symbols with commas for the API request
+      const symbolsParam = symbols.join(',');
+
+      // Use our dedicated stocks API endpoint with multiple symbols
       const response = await fetch(
-        `${config.API_URL}market-data/prices?symbols=${symbol}`,
+        `${config.API_URL}stocks?symbols=${symbolsParam}`,
         {
           method: 'GET',
           headers: {
@@ -93,37 +101,52 @@ export class MarketDataAppProvider {
         if (response.status === 401 || response.status === 403) {
           throw new Error('Authentication error');
         }
-        console.warn(`Failed to fetch quote for ${symbol}: ${response.status}`);
-        return null;
+        console.warn(`Failed to fetch quotes for [${symbolsParam}]: ${response.status}`);
+        return {};
       }
 
       const data = await response.json();
 
-      if (!data || !data.prices || !data.prices[symbol]) {
-        console.warn(`No data returned for ${symbol}`);
-        return null;
+      if (!data || !data.prices) {
+        console.warn(`No data returned for [${symbolsParam}]`);
+        return {};
       }
 
-      const symbolData = data.prices[symbol];
-      const price = parseFloat(symbolData.price);
-      const change = parseFloat(symbolData.change || 0);
-      const changePercent = parseFloat(symbolData.percent_change || 0);
-      // Use the symbol as name if not provided
-      const name = symbolData.name || symbol;
+      // Process all returned symbols
+      const result = {};
 
-      if (isNaN(price)) {
-        console.warn(`Invalid numeric data for ${symbol}`);
-        return null;
+      // Iterate through the requested symbols to maintain order and handle missing data
+      for (const symbol of symbols) {
+        const symbolData = data.prices[symbol];
+
+        // Skip if no data for this symbol
+        if (!symbolData) {
+          console.warn(`No data returned for ${symbol}`);
+          continue;
+        }
+
+        const price = parseFloat(symbolData.price);
+        const change = parseFloat(symbolData.change || 0);
+        const changePercent = parseFloat(symbolData.percent_change || 0);
+        // Use the symbol as name if not provided
+        const name = symbolData.name || symbol;
+
+        if (isNaN(price)) {
+          console.warn(`Invalid numeric data for ${symbol}`);
+          continue;
+        }
+
+        result[symbol] = {
+          name,
+          price,
+          change,
+          changePercent
+        };
       }
 
-      return {
-        name,
-        price,
-        change,
-        changePercent
-      };
+      return result;
     } catch (error) {
-      console.error(`Error fetching quote for ${symbol}:`, error);
+      console.error(`Error fetching quotes for [${symbols.join(',')}]:`, error);
       throw error;
     }
   }
@@ -136,88 +159,62 @@ export class MarketDataAppProvider {
     }
 
     try {
-        await this.initialize();
+      await this.initialize();
 
-        // Check cache first
-        const cacheKey = query.toLowerCase().trim();
-        const cached = this.searchCache.get(cacheKey);
-        if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) {
-            return cached.results;
+      // Check cache first
+      const cacheKey = query.toLowerCase().trim();
+      const cached = this.searchCache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) {
+        return cached.results;
+      }
+
+      try {
+        // Fetch from our server using the correct API endpoint
+        // The symbols search endpoint is at /api/symbols/search or /api/symbols/cache/search
+        // We need to remove 'market-data/' from the path
+        const baseUrl = config.API_URL.replace('market-data/', '');
+        const response = await fetch(
+          `${baseUrl}symbols/cache/search?query=${encodeURIComponent(query)}`,
+          {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            credentials: 'omit' // Don't send cookies for cross-origin requests
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        try {
-            // Fetch from our server using configured API_URL
-            const response = await fetch(
-                `${config.API_URL}symbols/search?q=${encodeURIComponent(query)}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'omit' // Don't send cookies for cross-origin requests
-                }
-            );
+        const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (!data || !Array.isArray(data.results)) {
-                console.warn('Invalid response format from symbols search');
-                throw new Error('Invalid response format');
-            }
-
-            // Cache the results
-            this.searchCache.set(cacheKey, {
-                timestamp: Date.now(),
-                results: data.results
-            });
-
-            return data.results;
-        } catch (apiError) {
-            console.warn('API search failed, using fallback data:', apiError);
+        // The symbol cache endpoint returns an array directly, not wrapped in a results property
+        if (!data) {
+          console.warn('Invalid response format from symbols search');
+          throw new Error('Invalid response format');
         }
+
+        // Handle both formats: direct array or {results: [...]} object
+        const results = Array.isArray(data) ? data : (data.results || []);
+
+        // Cache the results
+        this.searchCache.set(cacheKey, {
+          timestamp: Date.now(),
+          results: results
+        });
+
+        return results;
+      } catch (apiError) {
+        console.warn('API search failed:', apiError);
+        return []; // Return empty array on API error
+      }
     } catch (error) {
-        console.error('Error searching symbols:', error);
-        return this.getMockSymbols(query); // Always return some data for testing
+      console.error('Error searching symbols:', error);
+      return []; // Return empty array on any error
     }
-  }
-
-  // Fallback mock data for testing
-  getMockSymbols(query) {
-    if (!query || typeof query !== 'string') {
-      return [];
-    }
-
-    const upperQuery = query.toUpperCase().trim();
-
-    // Return all mock data if query is too short
-    if (upperQuery.length < 2) {
-      return [];
-    }
-
-    const mockData = [
-      { symbol: 'AAPL', name: 'Apple Inc.' },
-      { symbol: 'MSFT', name: 'Microsoft Corporation' },
-      { symbol: 'GOOGL', name: 'Alphabet Inc.' },
-      { symbol: 'AMZN', name: 'Amazon.com Inc.' },
-      { symbol: 'META', name: 'Meta Platforms Inc.' },
-      { symbol: 'TSLA', name: 'Tesla Inc.' },
-      { symbol: 'NVDA', name: 'NVIDIA Corporation' },
-      { symbol: 'JPM', name: 'JPMorgan Chase & Co.' },
-      { symbol: 'V', name: 'Visa Inc.' },
-      { symbol: 'JNJ', name: 'Johnson & Johnson' }
-    ];
-
-    return mockData
-      .filter(item =>
-        item.symbol.includes(upperQuery) ||
-        item.name.toUpperCase().includes(upperQuery)
-      )
-      .slice(0, 6);
   }
 }
 

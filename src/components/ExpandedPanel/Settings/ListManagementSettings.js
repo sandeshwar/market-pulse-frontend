@@ -12,22 +12,33 @@ import { createRoot } from 'react-dom/client';
 let settingsElement = null;
 
 async function createListItem({ name, symbols = [], actions = [], showFooter = true }) {
-  // Get real-time quotes for all symbols
-  const symbolsWithQuotes = await Promise.all(
-    symbols.map(async (symbol) => {
-      try {
-        const quote = await marketDataProvider.getQuote(symbol);
+  // Get real-time quotes for all symbols in a single API call
+  let symbolsWithQuotes = [];
+
+  if (symbols.length > 0) {
+    try {
+      // Use the new bulk method to fetch all symbols at once
+      const quotes = await marketDataProvider.getMultipleStocks(symbols);
+
+      // Transform the response into the expected format
+      symbolsWithQuotes = symbols.map(symbol => {
+        const quote = quotes[symbol];
         return {
           symbol,
           name: quote?.name || symbol,
           price: quote?.price?.toFixed(2) || 'N/A'
         };
-      } catch (error) {
-        console.error(`Error fetching quote for ${symbol}:`, error);
-        return { symbol, name: symbol, price: 'N/A' };
-      }
-    })
-  );
+      });
+    } catch (error) {
+      console.error(`Error fetching quotes for list:`, error);
+      // Fallback to basic symbol information if API call fails
+      symbolsWithQuotes = symbols.map(symbol => ({
+        symbol,
+        name: symbol,
+        price: 'N/A'
+      }));
+    }
+  }
 
   const itemsList = symbolsWithQuotes.map(item => `
     <div class="list-item" data-symbol="${item.symbol}" tabindex="0">

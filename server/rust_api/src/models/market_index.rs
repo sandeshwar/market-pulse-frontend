@@ -37,6 +37,8 @@ pub enum MarketStatus {
     PreMarket,
     AfterHours,
     Holiday,
+    /// Used when the market status cannot be determined
+    Unknown,
 }
 
 /// Represents the trading hours for a market

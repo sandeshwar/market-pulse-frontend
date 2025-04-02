@@ -30,11 +30,20 @@ export function SymbolSearch({ onSelect, maxResults = 10, placeholder = "Search 
             setLoading(true);
             try {
                 const response = await marketDataProvider.searchSymbols(query);
-                const searchResults = Array.isArray(response) 
-                    ? response 
-                    : (response.results || []);
-                    
-                setResults(searchResults.slice(0, maxResults));
+
+                // Handle different response formats
+                // The response should be an array of symbol objects
+                const searchResults = Array.isArray(response) ? response : [];
+
+                // Map the results to ensure they have the expected format
+                const formattedResults = searchResults.map(item => ({
+                    symbol: item.ticker || item.symbol || '',
+                    name: item.name || '',
+                    exchange: item.exchange || '',
+                    assetType: item.asset_type || item.assetType || ''
+                }));
+
+                setResults(formattedResults.slice(0, maxResults));
                 // Reset selection to first item when results change
                 setSelectedIndex(0);
             } catch (error) {

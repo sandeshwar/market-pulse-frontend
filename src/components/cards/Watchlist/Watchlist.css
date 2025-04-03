@@ -52,11 +52,11 @@
 }
 
 .stock-change.positive {
-  color: var(--success);
+  color: var(--accent-positive);
 }
 
 .stock-change.negative {
-  color: var(--error);
+  color: var(--accent-negative);
 }
 
 .watchlist-item-actions {

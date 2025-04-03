@@ -430,8 +430,6 @@ impl TiingoClient {
         Ok(Some(data.close))
     }
 
-    // Market indices functionality has been removed
-
     /// Fetches metadata for a symbol
     pub async fn fetch_metadata(&self, symbol: &str) -> Result<Option<TiingoMetaResponse>, ApiError> {
         let clean_symbol = self.clean_symbol(symbol);
@@ -506,33 +504,5 @@ impl TiingoClient {
         }
     }
 
-    /// Gets a display name for an index or ETF
-    fn get_index_name(&self, symbol: &str) -> String {
-        // First check if this is an ETF proxy we recognize
-        match symbol.to_uppercase().as_str() {
-            "SPY" => "S&P 500 ETF".to_string(),
-            "QQQ" => "NASDAQ-100 ETF".to_string(),
-            "DIA" => "Dow Jones Industrial Average ETF".to_string(),
-            "IWM" => "Russell 2000 ETF".to_string(),
-            "VTI" => "Total Stock Market ETF".to_string(),
-            // Map ETF proxies back to their index names
-            _ => {
-                // Try to find a reverse mapping from ETF to index
-                let index_symbol = match symbol.to_uppercase().as_str() {
-                    "SPY" => "SPX",
-                    "QQQ" => "NDX",
-                    "DIA" => "DJI",
-                    "IWM" => "RUT",
-                    _ => symbol,
-                };
-
-                // Check if we have a display name for this index
-                if let Some(name) = crate::config::market_indices::get_index_display_name(index_symbol) {
-                    name
-                } else {
-                    format!("{} Index", symbol)
-                }
-            }
-        }
-    }
+    // Market indices functionality has been removed
 }

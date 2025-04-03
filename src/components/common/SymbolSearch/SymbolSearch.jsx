@@ -36,12 +36,16 @@ export function SymbolSearch({ onSelect, maxResults = 10, placeholder = "Search 
                 const searchResults = Array.isArray(response) ? response : [];
 
                 // Map the results to ensure they have the expected format
-                const formattedResults = searchResults.map(item => ({
-                    symbol: item.ticker || item.symbol || '',
-                    name: item.name || '',
-                    exchange: item.exchange || '',
-                    assetType: item.asset_type || item.assetType || ''
-                }));
+                const formattedResults = searchResults.map(item => {
+                    const symbol = item.ticker || item.symbol || '';
+                    return {
+                        symbol: symbol,
+                        // Use the symbol as the name if name is not provided
+                        name: item.name || symbol,
+                        exchange: item.exchange || '',
+                        assetType: item.asset_type || item.assetType || ''
+                    };
+                });
 
                 setResults(formattedResults.slice(0, maxResults));
                 // Reset selection to first item when results change
@@ -177,10 +181,11 @@ export function SymbolSearch({ onSelect, maxResults = 10, placeholder = "Search 
                             className={`search-result-item ${index === selectedIndex ? 'selected' : ''}`}
                             onClick={() => handleSelectSymbol(result)}
                             onMouseEnter={() => setSelectedIndex(index)}
-                            title={`${result.symbol} - ${result.name || 'Unknown'}`}
+                            title={`${result.symbol}${result.name !== result.symbol ? ` - ${result.name}` : ''} - ${result.exchange || 'Unknown'} - ${result.assetType || 'Unknown'}`}
                         >
                             <span className="symbol">{result.symbol}</span>
-                            <span className="name">{result.name || 'Unknown'}</span>
+                            <span className="name">{result.name === result.symbol ? '' : result.name}</span>
+                            <span className="exchange">{result.exchange || 'Unknown'}{result.assetType ? ` (${result.assetType})` : ''}</span>
                         </li>
                     ))}
                 </ul>

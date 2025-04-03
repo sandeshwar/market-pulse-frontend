@@ -144,7 +144,7 @@ function initializeSymbolSearch(containerElement) {
         // Get the actual watchlist first, then add the symbol
         ensureDefaultWatchlist()
           .then(watchlist => {
-            return watchlistService.addSymbol(watchlist.name, symbol.symbol);
+            return watchlistService.addSymbol(watchlist.name, symbol);
           })
           .then(() => {
             // Find the container element to refresh

@@ -10,7 +10,7 @@ import { SymbolSearch } from '../../common/SymbolSearch/SymbolSearch.jsx';
 import { DEFAULT_WATCHLIST_NAME, ensureDefaultWatchlist } from '../../../utils/watchlistUtils.js';
 import { DEFAULT_REFRESH_INTERVAL } from '../../../constants/marketConstants.js';
 
-function createWatchlistItem({ symbol, name, price, change, changePercent }) {
+function createWatchlistItem({ symbol, name, price, change, changePercent, market = '', type = '' }) {
     const isPositive = change >= 0;
     const changeClass = isPositive ? 'positive' : 'negative';
     return `
@@ -18,7 +18,7 @@ function createWatchlistItem({ symbol, name, price, change, changePercent }) {
       <div class="watchlist-item-content">
         <div class="stock-info">
           <div class="stock-symbol">${symbol}</div>
-          <div class="stock-name">${name}</div>
+          <div class="stock-name">${market} | ${type}</div>
         </div>
         <div class="stock-price">
           <div>${price}</div>
@@ -37,7 +37,7 @@ export async function createWatchlistCard({ title = 'Watchlist' }) {
 
     // Create initial card with loading state
     const cardElement = createElementFromHTML(createCard({
-        title,
+        title: 'My Watchlist', // Use 'My Watchlist' for consistency with React component
         icon: ICONS.star,
         content: '<div class="loading">Loading watchlist...</div>'
     }));
@@ -85,14 +85,15 @@ export async function createWatchlistCard({ title = 'Watchlist' }) {
                 console.log('Quotes received from marketDataProvider:', quotes);
 
                 // Transform the response into the expected format
-                stocksWithQuotes = watchlist.symbols.map(symbol => {
+                stocksWithQuotes = watchlist.symbols.map((symbol, index) => {
                     // Try to find the quote by exact symbol match first
                     let quote = quotes[symbol];
+                    let matchingSymbolKey = null;
 
                     // If not found, try to find by checking if any returned symbol contains this symbol
                     // This handles cases where the API returns "AAPL.US" but the watchlist has "AAPL"
                     if (!quote) {
-                        const matchingSymbolKey = Object.keys(quotes).find(key =>
+                        matchingSymbolKey = Object.keys(quotes).find(key =>
                             key.includes(symbol) || symbol.includes(key.split('.')[0])
                         );
 
@@ -109,12 +110,28 @@ export async function createWatchlistCard({ title = 'Watchlist' }) {
 
                     console.log(`Processing quote for ${symbol}:`, quote);
 
+                    // Get stored symbol data if available
+                    const symbolData = watchlist.symbolsData && watchlist.symbolsData[index]
+                        ? watchlist.symbolsData[index]
+                        : null;
+
+                    // Extract market from stored data, symbol, or default to US
+                    const market = symbolData?.exchange ||
+                                  quote.market ||
+                                  (matchingSymbolKey && matchingSymbolKey.includes('.') ?
+                                   matchingSymbolKey.split('.')[1] : 'US');
+
+                    // Extract asset type from stored data or default to Stock
+                    const assetType = symbolData?.assetType || quote.type || 'Stock';
+
                     return {
                         symbol,
                         name: quote.name || symbol,
                         price: quote.price,
                         change: quote.change,
-                        changePercent: quote.changePercent
+                        changePercent: quote.changePercent,
+                        market: market,
+                        type: assetType
                     };
                 });
             } catch (error) {
@@ -173,11 +190,13 @@ export async function createWatchlistCard({ title = 'Watchlist' }) {
     return cardElement;
 }
 
-export function WatchlistCard() {
+export function WatchlistCard({ title = 'Watchlist' }) {
     const [watchlistData, setWatchlistData] = useState(null);
     const [stocksData, setStocksData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const MAX_RETRIES = 3;
 
     // Using the shared ensureDefaultWatchlist function from watchlistUtils.js
 
@@ -195,6 +214,8 @@ export function WatchlistCard() {
                 // Use the first watchlist (we only support one watchlist for now)
                 setWatchlistData(watchlists[0]);
             }
+            // Reset retry count on success
+            setRetryCount(0);
         } catch (error) {
             console.error('Failed to load watchlist data:', error);
             setError('Failed to load watchlist data');
@@ -202,10 +223,16 @@ export function WatchlistCard() {
             try {
                 const newWatchlist = await watchlistService.createWatchlist(DEFAULT_WATCHLIST_NAME);
                 setWatchlistData(newWatchlist);
+                // Reset retry count on success
+                setRetryCount(0);
             } catch (fallbackError) {
                 console.error('Failed to create default watchlist:', fallbackError);
                 setError('Failed to load or create watchlist');
-                alert('Failed to load or create watchlist. Please try refreshing the page.');
+
+                // Only show alert if we've exhausted retries
+                if (retryCount >= MAX_RETRIES) {
+                    alert('Failed to load or create watchlist. Please try refreshing the page.');
+                }
             }
         } finally {
             setLoading(false);
@@ -222,18 +249,24 @@ export function WatchlistCard() {
         try {
             const quotes = await marketDataProvider.getMultipleStocks(watchlistData.symbols);
 
+            // Log the quotes we received to help debug (matching the original component)
+            console.log('Quotes received from marketDataProvider:', quotes);
+
             // Transform the response into the expected format
-            const stocksWithQuotes = watchlistData.symbols.map(symbol => {
+            const stocksWithQuotes = watchlistData.symbols.map((symbol, index) => {
                 // Try to find the quote by exact symbol match first
                 let quote = quotes[symbol];
+                let matchingSymbolKey = null;
 
                 // If not found, try to find by checking if any returned symbol contains this symbol
+                // This handles cases where the API returns "AAPL.US" but the watchlist has "AAPL"
                 if (!quote) {
-                    const matchingSymbolKey = Object.keys(quotes).find(key =>
+                    matchingSymbolKey = Object.keys(quotes).find(key =>
                         key.includes(symbol) || symbol.includes(key.split('.')[0])
                     );
 
                     if (matchingSymbolKey) {
+                        console.log(`Found matching symbol: ${matchingSymbolKey} for requested symbol: ${symbol}`);
                         quote = quotes[matchingSymbolKey];
                     }
                 }
@@ -243,23 +276,53 @@ export function WatchlistCard() {
                     return null;
                 }
 
+                console.log(`Processing quote for ${symbol}:`, quote);
+
+                // Get stored symbol data if available
+                const symbolData = watchlistData.symbolsData && watchlistData.symbolsData[index]
+                    ? watchlistData.symbolsData[index]
+                    : null;
+
+                // Extract market from stored data, symbol, or default to US
+                const market = symbolData?.exchange ||
+                              quote.market ||
+                              (matchingSymbolKey && matchingSymbolKey.includes('.') ?
+                               matchingSymbolKey.split('.')[1] : 'US');
+
+                // Extract asset type from stored data or default to Stock
+                const assetType = symbolData?.assetType || quote.type || 'Stock';
+
                 return {
                     symbol,
                     name: quote.name || symbol,
                     price: quote.price,
                     change: quote.change,
-                    changePercent: quote.changePercent
+                    changePercent: quote.changePercent,
+                    market: market,
+                    type: assetType
                 };
             });
 
             const validStocks = stocksWithQuotes.filter(stock => stock !== null);
             setStocksData(validStocks);
+
+            // Reset retry count on success
+            setRetryCount(0);
         } catch (error) {
             console.error('Error fetching stock data:', error);
             setError('Failed to fetch stock data');
+
+            // Implement retry logic similar to the original component
+            if (retryCount < MAX_RETRIES) {
+                const newRetryCount = retryCount + 1;
+                setRetryCount(newRetryCount);
+                console.log(`Retrying update (${newRetryCount}/${MAX_RETRIES})...`);
+                // We'll retry in the next interval cycle
+            }
         }
     };
 
+    // Initial data load effect
     useEffect(() => {
         loadWatchlistData();
 
@@ -279,6 +342,8 @@ export function WatchlistCard() {
 
     // Set up auto-refresh interval
     useEffect(() => {
+        console.log(`Watchlist auto-refresh enabled with interval: ${DEFAULT_REFRESH_INTERVAL}ms`);
+
         const refreshInterval = setInterval(() => {
             if (watchlistData && watchlistData.symbols && watchlistData.symbols.length > 0) {
                 console.log('Auto-refreshing watchlist data...');
@@ -298,7 +363,8 @@ export function WatchlistCard() {
         if (!watchlistData) {
             ensureDefaultWatchlist()
                 .then(watchlist => {
-                    return watchlistService.addSymbol(DEFAULT_WATCHLIST_NAME, symbol.symbol);
+                    // Pass the full symbol object to store additional data
+                    return watchlistService.addSymbol(DEFAULT_WATCHLIST_NAME, symbol);
                 })
                 .then(() => {
                     // Refresh watchlist data
@@ -314,7 +380,8 @@ export function WatchlistCard() {
         // Use the watchlist name from watchlistData, or fall back to DEFAULT_WATCHLIST_NAME
         const watchlistName = watchlistData.name || DEFAULT_WATCHLIST_NAME;
 
-        watchlistService.addSymbol(watchlistName, symbol.symbol)
+        // Pass the full symbol object to store additional data
+        watchlistService.addSymbol(watchlistName, symbol)
             .then(() => {
                 // Refresh watchlist data
                 loadWatchlistData();
@@ -355,7 +422,9 @@ export function WatchlistCard() {
                         <div className="watchlist-item-content">
                             <div className="stock-info">
                                 <div className="stock-symbol">{stock.symbol}</div>
-                                <div className="stock-name">{stock.name}</div>
+                                <div className="stock-name">
+                                    {stock.market || 'US'} | {stock.type || 'Stock'}
+                                </div>
                             </div>
                             <div className="stock-price">
                                 <div>{stock.price}</div>
@@ -371,13 +440,16 @@ export function WatchlistCard() {
     };
 
     return (
-        <div className="watchlist-card">
-            {renderWatchlistItems()}
-            <SymbolSearch
-                onSelect={handleSymbolSelect}
-                maxResults={10}
-                placeholder="Search for a stock or ETF"
-            />
+        <div className="watchlist-card card">
+            <div className="card__header">
+                <div className="card__title">
+                    <i data-feather="star"></i>
+                    {title}
+                </div>
+            </div>
+            <div className="card__content">
+                {renderWatchlistItems()}
+            </div>
         </div>
     );
 }

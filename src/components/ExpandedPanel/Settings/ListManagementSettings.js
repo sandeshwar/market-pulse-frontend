@@ -147,7 +147,7 @@ function initializeSymbolSearch(containerElement, watchlistName) {
     <SymbolSearch 
       onSelect={(symbol) => {
         // Add the symbol to the watchlist
-        watchlistService.addSymbol(watchlistName, symbol.symbol)
+        watchlistService.addSymbol(watchlistName, symbol)
           .then(() => {
             // Update the UI after adding the symbol
             updateWatchlistDisplay(watchlistName);

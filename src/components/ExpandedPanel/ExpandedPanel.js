@@ -1,6 +1,8 @@
 import { createTabNavigation } from './TabNavigation/TabNavigation.js';
 import { createMarketIndicesCard } from '../cards/MarketIndices/MarketIndices.js';
-import { createWatchlistCard } from '../cards/Watchlist/Watchlist.jsx';
+// import { createWatchlistCard } from '../cards/Watchlist/Watchlist.jsx';
+// Import the React wrapper for future use
+import { createWatchlistCardReact } from '../cards/Watchlist/WatchlistReactWrapper.jsx';
 import { createBreakingNewsCard } from '../cards/BreakingNews/BreakingNews.js';
 import { createSettingsPage } from './Settings/SettingsPage.jsx';
 import { replaceIcons } from '../../utils/feather.js';
@@ -9,7 +11,12 @@ import { replaceIcons } from '../../utils/feather.js';
 export async function createExpandedPanel() {
   // Create components that need cleanup
   const marketIndicesCard = await createMarketIndicesCard();
-  const watchlistCard = await createWatchlistCard({ title: 'My Watchlist' });
+
+  // Using the vanilla JS version for now
+  // TODO: Migrate to React version when ready
+  // const watchlistCard = await createWatchlistCard({ title: 'My Watchlist' });
+  const watchlistCard = await createWatchlistCardReact({ title: 'My Watchlist' });
+
   const newsCard = await createBreakingNewsCard();
   const settingsPage = await createSettingsPage();
   

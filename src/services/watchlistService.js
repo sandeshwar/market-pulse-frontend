@@ -93,19 +93,51 @@ class WatchlistService {
         return true;
     }
 
-    async addSymbol(watchlistName, symbol) {
+    async addSymbol(watchlistName, symbolData) {
         const watchlists = await this.getWatchlists();
         const watchlist = watchlists.find(w => w.name === watchlistName);
-        
+
         if (!watchlist) {
             throw new Error('Watchlist not found');
         }
 
-        if (watchlist.symbols.includes(symbol)) {
+        // Handle both string and object formats for backward compatibility
+        const symbolStr = typeof symbolData === 'string' ? symbolData : symbolData.symbol;
+
+        // Check if the symbol already exists in the watchlist
+        const existingIndex = watchlist.symbolsData ?
+            watchlist.symbolsData.findIndex(item => item.symbol === symbolStr) : -1;
+
+        if (existingIndex >= 0 || watchlist.symbols.includes(symbolStr)) {
             throw new Error('Symbol already in watchlist');
         }
 
-        watchlist.symbols.push(symbol);
+        // Initialize symbolsData array if it doesn't exist
+        if (!watchlist.symbolsData) {
+            watchlist.symbolsData = [];
+        }
+
+        // Add to both arrays for backward compatibility
+        watchlist.symbols.push(symbolStr);
+
+        // Store the full symbol data
+        if (typeof symbolData === 'object') {
+            watchlist.symbolsData.push({
+                symbol: symbolData.symbol,
+                name: symbolData.name || symbolData.symbol,
+                exchange: symbolData.exchange || '',
+                assetType: symbolData.assetType || symbolData.asset_type || 'Stock'
+            });
+        } else {
+            // If only string was provided, create a minimal object
+            watchlist.symbolsData.push({
+                symbol: symbolStr,
+                name: symbolStr,
+                exchange: 'US',
+                assetType: 'Stock'
+            });
+        }
+
         await chrome.storage.sync.set({ [this.storageKey]: watchlists });
         return watchlist.symbols;
     }
@@ -113,7 +145,7 @@ class WatchlistService {
     async removeSymbol(watchlistName, symbol) {
         const watchlists = await this.getWatchlists();
         const watchlist = watchlists.find(w => w.name === watchlistName);
-        
+
         if (!watchlist) {
             throw new Error('Watchlist not found');
         }
@@ -123,7 +155,17 @@ class WatchlistService {
             throw new Error('Symbol not found in watchlist');
         }
 
+        // Remove from the symbols array
         watchlist.symbols.splice(symbolIndex, 1);
+
+        // Also remove from symbolsData if it exists
+        if (watchlist.symbolsData) {
+            const dataIndex = watchlist.symbolsData.findIndex(item => item.symbol === symbol);
+            if (dataIndex !== -1) {
+                watchlist.symbolsData.splice(dataIndex, 1);
+            }
+        }
+
         await chrome.storage.sync.set({ [this.storageKey]: watchlists });
         return watchlist.symbols;
     }

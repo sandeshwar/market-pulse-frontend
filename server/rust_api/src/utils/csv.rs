@@ -37,11 +37,6 @@ pub fn read_symbols_from_csv<P: AsRef<Path>>(path: P) -> Result<SymbolCollection
                 "STOCK" => AssetType::Stock,
                 "ETF" => AssetType::Etf,
                 "INDEX" => AssetType::Index,
-                // "FOREX" => AssetType::Forex,
-                // "CRYPTO" => AssetType::Crypto,
-                // "FUTURE" => AssetType::Future,
-                // "OPTION" => AssetType::Option,
-                // "BOND" => AssetType::Bond,
                 _ => AssetType::Other,
             };
             

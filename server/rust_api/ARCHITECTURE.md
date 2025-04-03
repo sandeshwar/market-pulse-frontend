@@ -23,7 +23,6 @@ market_pulse_api/
 The models directory contains the core data structures used throughout the application:
 
 - **symbol.rs**: Defines structures for representing financial symbols (stocks, ETFs, etc.)
-- **market_index.rs**: Defines structures for market indices (S&P 500, Dow Jones, etc.)
 - **market_data.rs**: Defines structures for time series and OHLCV data
 - **error.rs**: Defines API error types and response structures
 
@@ -32,7 +31,6 @@ The models directory contains the core data structures used throughout the appli
 The services directory contains the business logic and data access layer:
 
 - **symbol.rs**: Manages symbol data, including loading from CSV and searching
-- **market_index.rs**: Manages market index data
 - **redis.rs**: Provides a Redis client for caching
 
 ### Handlers
@@ -41,7 +39,6 @@ The handlers directory contains the API endpoint implementations:
 
 - **health.rs**: Health check endpoint
 - **symbol.rs**: Symbol search endpoint
-- **market_index.rs**: Market indices endpoint
 
 ### Utils
 

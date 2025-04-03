@@ -504,5 +504,5 @@ impl TiingoClient {
         }
     }
 
-    // Market indices functionality has been removed
+   
 }

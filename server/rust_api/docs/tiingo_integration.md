@@ -9,8 +9,6 @@ The integration with Tiingo's Market Data API allows our application to:
 1. Fetch real-time and end-of-day market data for stocks and ETFs
 2. Efficiently cache and manage market data
 
-Note: Market indices data is NOT provided by Tiingo but instead comes from dedicated market index providers (WSJ and Google Finance).
-
 ## Setup and Configuration
 
 ### Prerequisites
@@ -68,9 +66,6 @@ let market_service = TiingoMarketDataService::new();
 let symbols = vec!["AAPL".to_string(), "MSFT".to_string()];
 let prices = market_service.get_symbol_prices(&symbols).await?;
 
-// Note: For market indices, use the dedicated MarketIndexService instead:
-// let market_index_service = MarketIndexService::new().await;
-// let indices_data = market_index_service.get_all_indices().await?;
 ```
 
 ## Symbol Format
@@ -79,17 +74,6 @@ Tiingo uses a specific format for symbols:
 
 - Stocks: Standard ticker symbols (e.g., `AAPL`, `MSFT`)
 - ETFs: Standard ticker symbols (e.g., `SPY`, `QQQ`)
-
-### Market Indices
-
-**Important Note**: Tiingo does not provide market index data through their API. After reviewing their documentation, we've confirmed that they only offer stock, ETF, and cryptocurrency data.
-
-For market indices, please use the dedicated market index providers:
-
-1. `WsjMarketIndexProvider` - Uses Wall Street Journal data for major indices
-2. `GoogleMarketIndexProvider` - Uses Google Finance data for indices
-
-The Tiingo client will return an empty result set if asked for market indices, with a warning log message directing you to use the appropriate provider.
 
 ### Tiingo Symbology
 
@@ -161,7 +145,6 @@ All errors are properly logged and propagated through the `ApiError` type.
    - Ensure the symbols are in the correct format
    - Check if the market is open (real-time data is only available during market hours)
    - Verify that the security is covered by Tiingo
-   - For market indices, use a dedicated market index provider instead of Tiingo
    - Remember that Tiingo only supports stocks, ETFs, and cryptocurrencies
 
 3. **Performance Issues**

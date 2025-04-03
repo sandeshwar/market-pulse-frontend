@@ -5,7 +5,6 @@ A high-performance API for the Market Pulse application, providing market data, 
 ## Features
 
 - Symbol search and lookup
-- Market indices data
 - Real-time market data from Tiingo
 - Redis caching for high performance
 - Background data updater for keeping cache fresh
@@ -53,7 +52,7 @@ To use the Tiingo API, you need to:
 2. Get your API key from your account dashboard
 3. Add the API key to your `.env` file
 
-The API uses the Tiingo endpoints for fetching real-time stock data, and the Wall Street Journal (WSJ) for market indices data.
+The API uses the Tiingo endpoints for fetching real-time stock data.
 
 ## Running the API
 
@@ -71,28 +70,13 @@ The API will start on port 3001 by default.
 GET /api/symbols/search?query=RELIANCE&limit=10
 ```
 
-### Market Indices
-
-```
-GET /api/indices
-```
-
 ### Stock Prices
 
 ```
 GET /api/market-data/stocks?symbols=AAPL,MSFT,GOOGL
 ```
 
-This endpoint is specifically for stock symbols and will reject any index symbols.
-
-### Market Indices Data
-
-```
-GET /api/market-data/indices?symbols=SPX,DJI,IXIC
-```
-
-This endpoint is specifically for index symbols and will reject any stock symbols.
-
+This endpoint is for stock symbols.
 
 ## Architecture
 
@@ -107,9 +91,7 @@ The API follows a modular architecture:
 
 1. When a request for market data is received, the API first checks the Redis cache
 2. If the data is available and not expired, it's returned immediately
-3. If not, the API fetches the data from the appropriate provider:
-   - Stock data: Fetched from Tiingo API
-   - Market indices: Fetched from Wall Street Journal (WSJ)
+3. If not, the API fetches the data from Tiingo API
 4. A background task periodically updates the cached data for frequently accessed symbols
 5. Stale data (not accessed for a configurable period) is automatically removed
 
@@ -135,12 +117,11 @@ cargo test
 
 This project is licensed under the MIT License - see the LICENSE file for details.# Market Pulse Rust API
 
-This is a high-performance Rust API for the Market Pulse application. It provides endpoints for accessing market data, symbols, and indices with extremely low latency.
+This is a high-performance Rust API for the Market Pulse application. It provides endpoints for accessing market data and symbols with extremely low latency.
 
 ## Features
 
 - Symbol search with efficient caching
-- Market indices data
 - Historical price data (planned)
 - Real-time updates (planned)
 
@@ -300,20 +281,6 @@ GET /api/symbols/count
 
 Get the total count of available symbols.
 
-### Market Indices
-
-```
-GET /api/indices
-```
-
-Get all market indices.
-
-```
-GET /api/indices?symbol=SPX
-```
-
-Get a specific market index.
-
 ### Market Data
 
 ```
@@ -321,12 +288,6 @@ GET /api/market-data/stocks?symbols=AAPL,MSFT,GOOGL
 ```
 
 Get market data for specific stock symbols.
-
-```
-GET /api/market-data/indices?symbols=SPX,DJI,IXIC
-```
-
-Get market data for specific index symbols.
 
 ## Architecture
 

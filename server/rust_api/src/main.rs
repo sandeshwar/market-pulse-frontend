@@ -77,6 +77,10 @@ async fn main() {
         tiingo_service
     };
 
+    // Initialize the indices market data service
+    let indices_service = Arc::new(services::indices_market_data::IndicesMarketDataService::new());
+    tracing::info!("Indices market data service initialized.");
+
     // Build our application with routes
     let app = Router::new()
         .route("/api/health", get(handlers::health::health_check))
@@ -85,6 +89,9 @@ async fn main() {
         .route("/api/symbols/count", get(handlers::symbol::get_symbols_count))
         // Dedicated endpoints for stocks
         .route("/api/market-data/stocks", get(handlers::market_data::get_stock_prices))
+        // Dedicated endpoints for indices
+        .route("/api/market-data/indices", get(handlers::indices::get_indices_data))
+        .route("/api/market-data/indices/all", get(handlers::indices::get_all_indices))
         // Symbol cache endpoints
         .route("/api/symbols/cache/status", get(handlers::symbol_cache::get_cache_status))
         .route("/api/symbols/cache/search", get(handlers::symbol_cache::search_symbols_by_prefix))
@@ -102,6 +109,7 @@ async fn main() {
             symbol_service,
             symbol_cache_service,
             market_data_service,
+            indices_data_service: Some(indices_service),
         });
 
     // Run the server

@@ -51,7 +51,6 @@ async function initializeWatchlistSettings(containerElement) {
     const symbolsList = watchlist.symbols && watchlist.symbols.length > 0
       ? `
         <div class="watchlist-symbols">
-          <h3 class="watchlist-section-title">Your Symbols</h3>
           <div class="symbols-grid">
             ${watchlist.symbols.map(symbol => `
               <div class="symbol-card">
@@ -79,14 +78,11 @@ async function initializeWatchlistSettings(containerElement) {
     // Render the content
     cardContent.innerHTML = `
       <div class="watchlist-content">
-        <div class="watchlist-header">
-          <p class="watchlist-description">Track your favorite symbols in one place</p>
-        </div>
-        ${symbolsList}
         <div class="watchlist-search-section">
           <h3 class="watchlist-section-title">Add New Symbol</h3>
           <div class="symbol-search-container"></div>
         </div>
+        ${symbolsList}
       </div>
     `;
 

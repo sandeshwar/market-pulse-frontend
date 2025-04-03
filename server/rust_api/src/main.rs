@@ -58,18 +58,13 @@ async fn main() {
     tracing::info!("Initializing SymbolService...");
     let symbol_service = services::symbol::SymbolService::new().await;
     tracing::info!("SymbolService initialized.");
-    tracing::info!("Initializing MarketIndexService...");
-    let market_index_service = services::market_index::MarketIndexService::new().await;
-    tracing::info!("MarketIndexService initialized.");
 
     // Check if we should skip market data initialization (for testing)
     let skip_market_data = std::env::var("SKIP_MARKET_DATA").unwrap_or_else(|_| "false".to_string()) == "true";
 
-    let (market_data_service, market_index_service) = if skip_market_data {
+    let market_data_service = if skip_market_data {
         tracing::info!("Skipping market data initialization (SKIP_MARKET_DATA=true)");
-        let tiingo_service = Arc::new(services::tiingo_market_data::TiingoMarketDataService::new());
-        let market_index_service = services::market_index::MarketIndexService::new().await;
-        (tiingo_service, market_index_service)
+        Arc::new(services::tiingo_market_data::TiingoMarketDataService::new())
     } else {
         // Create the Tiingo market data service for stocks
         let tiingo_service = Arc::new(services::tiingo_market_data::TiingoMarketDataService::new());
@@ -79,17 +74,7 @@ async fn main() {
         services::tiingo_market_data::TiingoMarketDataService::start_background_updater(tiingo_service.clone()).await;
         tracing::info!("Tiingo background updater started.");
 
-        // Initialize market index service and provider
-        let market_index_service = services::market_index::MarketIndexService::new().await;
-        let market_index_provider = services::market_index_provider::factory::MarketIndexProviderFactory::create("wsj");
-
-        tracing::info!("Setting market index provider...");
-        if let Err(e) = market_index_service.set_provider(market_index_provider).await {
-            tracing::warn!("Failed to initialize market index provider: {}. Will continue with default values.", e);
-        }
-        tracing::info!("Market index provider setup completed");
-
-        (tiingo_service, market_index_service)
+        tiingo_service
     };
 
     // Build our application with routes
@@ -98,12 +83,8 @@ async fn main() {
         .route("/api/symbols/search", get(handlers::symbol::search_symbols))
         .route("/api/symbols/range", get(handlers::symbol::get_symbols_by_range))
         .route("/api/symbols/count", get(handlers::symbol::get_symbols_count))
-        .route("/api/indices", get(handlers::market_index::get_indices))
-        .route("/api/indices/available", get(handlers::market_index::get_available_indices))
-        .route("/api/indices/default", get(handlers::market_index::get_default_display_indices))
-        // Dedicated endpoints for stocks and indices
+        // Dedicated endpoints for stocks
         .route("/api/market-data/stocks", get(handlers::market_data::get_stock_prices))
-        .route("/api/market-data/indices", get(handlers::market_data::get_market_indices))
         // Symbol cache endpoints
         .route("/api/symbols/cache/status", get(handlers::symbol_cache::get_cache_status))
         .route("/api/symbols/cache/search", get(handlers::symbol_cache::search_symbols_by_prefix))
@@ -120,7 +101,6 @@ async fn main() {
         .with_state(AppState {
             symbol_service,
             symbol_cache_service,
-            market_index_service,
             market_data_service,
         });
 

@@ -1,5 +1,4 @@
 use crate::models::symbol::SymbolPrice;
-use crate::models::market_index::MarketIndex;
 use crate::models::error::ApiError;
 use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
@@ -431,16 +430,7 @@ impl TiingoClient {
         Ok(Some(data.close))
     }
 
-    /// Tiingo doesn't support market indices directly
-    ///
-    /// This method is intentionally removed as Tiingo doesn't provide market index data.
-    /// Use dedicated market index providers like WsjMarketIndexProvider or GoogleMarketIndexProvider instead.
-    pub async fn fetch_market_indices(&self, _indices: &[String]) -> Result<Vec<MarketIndex>, ApiError> {
-        tracing::warn!("Tiingo does not support market indices directly. Use a dedicated market index provider instead.");
-
-        // Return an empty vector since Tiingo can't provide this data
-        Ok(Vec::new())
-    }
+    // Market indices functionality has been removed
 
     /// Fetches metadata for a symbol
     pub async fn fetch_metadata(&self, symbol: &str) -> Result<Option<TiingoMetaResponse>, ApiError> {

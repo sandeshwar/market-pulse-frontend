@@ -1,5 +1,4 @@
 use crate::models::symbol::{SymbolPrice, BatchPriceResponse};
-use crate::models::market_index::{MarketIndex, MarketIndicesCollection};
 use crate::models::error::ApiError;
 use crate::services::redis::RedisManager;
 use std::sync::Arc;
@@ -16,17 +15,11 @@ pub trait MarketDataProvider: Send + Sync + 'static {
     /// Gets price data for a list of symbols
     async fn get_symbol_prices(&self, symbols: &[String]) -> Result<BatchPriceResponse, ApiError>;
 
-    /// Gets market index data
-    async fn get_market_indices(&self, indices: &[String]) -> Result<MarketIndicesCollection, ApiError>;
-
     /// Tracks which symbols are being accessed
     async fn track_accessed_symbols(&self, symbols: &[String]) -> Result<(), ApiError>;
 
     /// Gets all symbols that need to be updated (cache expired)
     async fn get_symbols_to_update(&self) -> Result<Vec<String>, ApiError>;
-
-    /// Gets all indices that need to be updated (cache expired)
-    async fn get_indices_to_update(&self) -> Result<Vec<String>, ApiError>;
 
     /// Removes stale symbols from the cache
     async fn remove_stale_symbols(&self) -> Result<(), ApiError>;
@@ -78,12 +71,6 @@ impl MarketDataProvider for MarketDataProviderEnum {
         }
     }
 
-    async fn get_market_indices(&self, indices: &[String]) -> Result<MarketIndicesCollection, ApiError> {
-        match self {
-            MarketDataProviderEnum::Tiingo(service) => service.get_market_indices(indices).await,
-        }
-    }
-
     async fn track_accessed_symbols(&self, symbols: &[String]) -> Result<(), ApiError> {
         match self {
             MarketDataProviderEnum::Tiingo(service) => service.track_accessed_symbols(symbols).await,
@@ -93,12 +80,6 @@ impl MarketDataProvider for MarketDataProviderEnum {
     async fn get_symbols_to_update(&self) -> Result<Vec<String>, ApiError> {
         match self {
             MarketDataProviderEnum::Tiingo(service) => service.get_symbols_to_update().await,
-        }
-    }
-
-    async fn get_indices_to_update(&self) -> Result<Vec<String>, ApiError> {
-        match self {
-            MarketDataProviderEnum::Tiingo(service) => service.get_indices_to_update().await,
         }
     }
 

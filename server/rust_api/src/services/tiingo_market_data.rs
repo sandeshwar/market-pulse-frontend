@@ -1,5 +1,4 @@
 use crate::models::symbol::{SymbolPrice, BatchPriceResponse};
-use crate::models::market_index::{MarketIndex, MarketIndicesCollection};
 use crate::models::error::ApiError;
 use crate::services::redis::RedisManager;
 use crate::services::market_data_provider::tiingo::TiingoClient;
@@ -15,9 +14,6 @@ use downcast_rs::Downcast;
 
 /// Key prefix for symbol price data in Redis
 const SYMBOL_PRICE_PREFIX: &str = "market_data:symbol:";
-
-/// Key prefix for market index data in Redis
-const MARKET_INDEX_PREFIX: &str = "market_data:index:";
 
 /// Key for tracking accessed symbols
 const ACCESSED_SYMBOLS_KEY: &str = "market_data:accessed_symbols";
@@ -178,52 +174,6 @@ impl MarketDataProvider for TiingoMarketDataService {
         })
     }
 
-    /// Gets market index data
-    async fn get_market_indices(&self, indices: &[String]) -> Result<MarketIndicesCollection, ApiError> {
-        if indices.is_empty() {
-            return Ok(MarketIndicesCollection::new());
-        }
-
-        // Track accessed indices
-        self.track_accessed_symbols(indices).await?;
-
-        // Check cache for each index
-        let mut cached_indices = HashMap::new();
-        let mut indices_to_fetch = Vec::new();
-
-        for index in indices {
-            let key = format!("{}{}", MARKET_INDEX_PREFIX, index);
-            match self.redis.get::<MarketIndex>(&key).await {
-                Ok(Some(index_data)) => {
-                    cached_indices.insert(index.clone(), index_data);
-                }
-                _ => {
-                    indices_to_fetch.push(index.clone());
-                }
-            }
-        }
-
-        // Fetch missing indices from the provider
-        if !indices_to_fetch.is_empty() {
-            let fresh_indices = self.provider.fetch_market_indices(&indices_to_fetch).await?;
-
-            // Cache the fresh data
-            for index in &fresh_indices {
-                let key = format!("{}{}", MARKET_INDEX_PREFIX, index.symbol);
-                if let Err(e) = self.redis.set(&key, index, Some(self.cache_duration as usize)).await {
-                    tracing::error!("Failed to cache market index for {}: {}", index.symbol, e);
-                }
-
-                cached_indices.insert(index.symbol.clone(), index.clone());
-            }
-        }
-
-        Ok(MarketIndicesCollection {
-            indices: cached_indices,
-            timestamp: Some(Utc::now()),
-        })
-    }
-
     /// Tracks which symbols are being accessed
     async fn track_accessed_symbols(&self, symbols: &[String]) -> Result<(), ApiError> {
         let now = Utc::now().timestamp();
@@ -282,43 +232,6 @@ impl MarketDataProvider for TiingoMarketDataService {
         Ok(symbols_to_update)
     }
 
-    /// Gets all indices that need to be updated (cache expired)
-    async fn get_indices_to_update(&self) -> Result<Vec<String>, ApiError> {
-        let mut conn = self.redis.get_connection().await
-            .map_err(|e| ApiError::InternalError(format!("Redis connection error: {}", e)))?;
-
-        // Get all accessed indices (they're tracked in the same set as symbols)
-        let indices: Vec<String> = redis::cmd("ZRANGE")
-            .arg(ACCESSED_SYMBOLS_KEY)
-            .arg(0)
-            .arg(-1)
-            .query_async(&mut conn)
-            .await
-            .map_err(|e| ApiError::InternalError(format!("Redis error: {}", e)))?;
-
-        let mut indices_to_update = Vec::new();
-
-        for index in indices {
-            let key = format!("{}{}", MARKET_INDEX_PREFIX, index);
-
-            // Check if the key exists and when it will expire
-            let ttl: i64 = redis::cmd("TTL")
-                .arg(&key)
-                .query_async(&mut conn)
-                .await
-                .map_err(|e| ApiError::InternalError(format!("Redis error: {}", e)))?;
-
-            // If TTL is -2, the key doesn't exist
-            // If TTL is -1, the key exists but has no expiry
-            // If TTL is <= 10, the key will expire soon
-            if ttl == -2 || ttl <= 10 {
-                indices_to_update.push(index);
-            }
-        }
-
-        Ok(indices_to_update)
-    }
-
     /// Removes stale symbols from the cache
     async fn remove_stale_symbols(&self) -> Result<(), ApiError> {
         let stale_cutoff = Utc::now() - Duration::seconds(self.stale_threshold);
@@ -353,16 +266,9 @@ impl MarketDataProvider for TiingoMarketDataService {
         // Remove stale symbols from the cache
         for symbol in &stale_symbols {
             let symbol_key = format!("{}{}", SYMBOL_PRICE_PREFIX, symbol);
-            let index_key = format!("{}{}", MARKET_INDEX_PREFIX, symbol);
 
             let _: () = redis::cmd("DEL")
                 .arg(&symbol_key)
-                .query_async(&mut conn)
-                .await
-                .map_err(|e| ApiError::InternalError(format!("Redis error: {}", e)))?;
-
-            let _: () = redis::cmd("DEL")
-                .arg(&index_key)
                 .query_async(&mut conn)
                 .await
                 .map_err(|e| ApiError::InternalError(format!("Redis error: {}", e)))?;
@@ -376,11 +282,10 @@ impl MarketDataProvider for TiingoMarketDataService {
         // Use a lock to prevent multiple concurrent updates
         let _lock = self.update_lock.lock().await;
 
-        // Get symbols and indices to update
+        // Get symbols to update
         let symbols = self.get_symbols_to_update().await?;
-        let indices = self.get_indices_to_update().await?;
 
-        tracing::info!("Updating {} symbols and {} indices", symbols.len(), indices.len());
+        tracing::info!("Updating {} symbols", symbols.len());
 
         // Update symbols in batches of 20
         for chunk in symbols.chunks(20) {
@@ -396,25 +301,6 @@ impl MarketDataProvider for TiingoMarketDataService {
                 },
                 Err(e) => {
                     tracing::error!("Failed to update symbol data: {}", e);
-                    continue;
-                }
-            }
-        }
-
-        // Update indices in batches of 10
-        for chunk in indices.chunks(10) {
-            match self.provider.fetch_market_indices(chunk).await {
-                Ok(indices_data) => {
-                    // Cache the fresh data
-                    for index_data in &indices_data {
-                        let key = format!("{}{}", MARKET_INDEX_PREFIX, index_data.symbol);
-                        if let Err(e) = self.redis.set(&key, index_data, Some(self.cache_duration as usize)).await {
-                            tracing::error!("Failed to cache market index for {}: {}", index_data.symbol, e);
-                        }
-                    }
-                },
-                Err(e) => {
-                    tracing::error!("Failed to update index data: {}", e);
                     continue;
                 }
             }

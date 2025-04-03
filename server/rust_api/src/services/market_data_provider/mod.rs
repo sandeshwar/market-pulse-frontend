@@ -1,7 +1,6 @@
 pub mod tiingo;
 
 use crate::models::symbol::SymbolPrice;
-use crate::models::market_index::MarketIndex;
 use crate::models::error::ApiError;
 
 /// Trait defining the interface for market data providers
@@ -10,9 +9,6 @@ use crate::models::error::ApiError;
 pub trait MarketDataProvider: Send + Sync {
     /// Fetches market data for a list of symbols
     async fn fetch_market_data(&self, symbols: &[String]) -> Result<Vec<SymbolPrice>, ApiError>;
-
-    /// Fetches market index data
-    async fn fetch_market_indices(&self, indices: &[String]) -> Result<Vec<MarketIndex>, ApiError>;
 }
 
 /// Trait defining the interface for real-time market data providers
@@ -26,15 +22,9 @@ pub trait RealTimeMarketDataProvider: Send + Sync {
     async fn unsubscribe(&self, symbols: &[String]) -> Result<(), ApiError>;
 }
 
-
-
 // Implement the trait for TiingoClient
 impl MarketDataProvider for tiingo::TiingoClient {
     async fn fetch_market_data(&self, symbols: &[String]) -> Result<Vec<SymbolPrice>, ApiError> {
         self.fetch_market_data(symbols).await
-    }
-
-    async fn fetch_market_indices(&self, indices: &[String]) -> Result<Vec<MarketIndex>, ApiError> {
-        self.fetch_market_indices(indices).await
     }
 }

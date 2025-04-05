@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MARKET_INDICES } from '../../../constants/marketConstants.js';
+import { marketDataService } from '../../../services/marketDataService.js';
 import './IndicesSearch.css';
 
 /**
@@ -15,34 +15,76 @@ export function IndicesSearch({ onSelect, maxResults = 10, placeholder = "Search
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [allIndices, setAllIndices] = useState([]);
+    const [indicesLoaded, setIndicesLoaded] = useState(false);
     const inputRef = useRef(null);
     const resultsRef = useRef(null);
     const containerRef = useRef(null);
 
+    // Load all indices on component mount
+    useEffect(() => {
+        const loadAllIndices = async () => {
+            try {
+                setLoading(true);
+                const indices = await marketDataService.getAvailableIndices();
+
+                // Transform the indices data to match our expected format
+                const formattedIndices = indices.map(index => {
+                    // The index.name from the API is actually the symbol (e.g., "SPX")
+                    const symbol = index.name;
+                    // Get the full name from additionalData
+                    const fullName = index.additionalData?.name || symbol;
+
+                    return {
+                        symbol: symbol,
+                        name: fullName,
+                        exchange: index.additionalData?.exchange || '',
+                        assetType: 'Index',
+                        // Include additional data for display or future use
+                        price: index.value,
+                        change: index.change,
+                        changePercent: index.changePercent,
+                        additionalData: index.additionalData
+                    };
+                });
+
+                // Log the count of indices for debugging
+                console.log(`Loaded ${formattedIndices.length} indices from API`);
+
+                setAllIndices(formattedIndices);
+                setIndicesLoaded(true);
+                console.log('Loaded indices:', formattedIndices);
+            } catch (error) {
+                console.error('Failed to load indices:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadAllIndices();
+    }, []);
+
     // Search for indices when query changes
     useEffect(() => {
-        const searchIndices = async () => {
-            if (query.length < 1) {
+        const searchIndices = () => {
+            if (query.length < 1 || !indicesLoaded) {
                 setResults([]);
                 return;
             }
 
             setLoading(true);
             try {
-                // Filter indices from MARKET_INDICES constant based on query
-                const filteredIndices = Object.entries(MARKET_INDICES)
-                    .filter(([symbol, name]) =>
-                        symbol.toLowerCase().includes(query.toLowerCase()) ||
-                        name.toLowerCase().includes(query.toLowerCase())
-                    )
-                    .map(([symbol, name]) => ({
-                        symbol,
-                        name,
-                        exchange: '',
-                        assetType: 'Index'
-                    }));
+                // Filter indices from our loaded indices based on query
+                const filteredIndices = allIndices.filter(index =>
+                    index.symbol.toLowerCase().includes(query.toLowerCase()) ||
+                    index.name.toLowerCase().includes(query.toLowerCase())
+                );
 
-                setResults(filteredIndices.slice(0, maxResults));
+                // Log the number of matches for debugging
+                console.log(`Found ${filteredIndices.length} indices matching "${query}"`);
+
+                // Use a higher limit to show more results
+                setResults(filteredIndices.slice(0, Math.max(maxResults, 20)));
                 // Reset selection to first item when results change
                 setSelectedIndex(0);
             } catch (error) {
@@ -56,7 +98,7 @@ export function IndicesSearch({ onSelect, maxResults = 10, placeholder = "Search
         // Debounce search to avoid excessive processing
         const debounceTimer = setTimeout(searchIndices, 300);
         return () => clearTimeout(debounceTimer);
-    }, [query, maxResults]);
+    }, [query, maxResults, allIndices, indicesLoaded]);
 
     // Handle keyboard navigation
     const handleKeyDown = (e) => {
@@ -157,13 +199,16 @@ export function IndicesSearch({ onSelect, maxResults = 10, placeholder = "Search
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={placeholder}
+                placeholder={!indicesLoaded ? "Loading indices..." : placeholder}
                 className="search-input"
                 autoFocus={autoFocus}
                 autoComplete="off" /* Prevent browser autocomplete from interfering */
+                disabled={!indicesLoaded} /* Disable input while indices are loading */
             />
 
-            {loading && <div className="symbol-search-loading">Searching...</div>}
+            {loading && <div className="symbol-search-loading">
+                {!indicesLoaded ? "Loading indices..." : "Searching..."}
+            </div>}
 
             {/* Render the dropdown only when there are results */}
             {results.length > 0 && (
@@ -178,7 +223,6 @@ export function IndicesSearch({ onSelect, maxResults = 10, placeholder = "Search
                         >
                             <span className="symbol">{result.symbol}</span>
                             <span className="name">{result.name}</span>
-                            <span className="exchange">Index</span>
                         </li>
                     ))}
                 </ul>

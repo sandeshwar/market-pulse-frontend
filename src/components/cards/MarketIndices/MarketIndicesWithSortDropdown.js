@@ -7,6 +7,8 @@ import { DEFAULT_REFRESH_INTERVAL, MAX_RETRIES, RETRY_DELAY } from '../../../con
 import { createElementFromHTML } from '../../../utils/dom.js';
 import { indicesWatchlistService } from '../../../services/indicesWatchlistService.js';
 import { ensureDefaultIndicesWatchlist } from '../../../utils/indicesWatchlistUtils.js';
+import { createSortDropdown } from '../../common/SortDropdown/SortDropdown.js';
+import { replaceIcons } from '../../../utils/feather.js';
 
 // Helper function to convert currency codes to symbols
 function getCurrencySymbol(currencyCode) {
@@ -124,6 +126,10 @@ export async function createMarketIndicesCard() {
 	let retryCount = 0;
 	const flipIntervals = []; // Use const to avoid reassignment
 	
+	// Current sort state
+	let currentSortField = 'name';
+	let currentSortDirection = 'asc';
+	
 	// Add a listener for watchlist changes with immediate refresh
 	const handleWatchlistUpdate = (updatedWatchlists) => {
 		console.log('Indices watchlist updated, refreshing display immediately', updatedWatchlists);
@@ -149,6 +155,45 @@ export async function createMarketIndicesCard() {
 		icon: ICONS.barChart2,
 		content: createLoadingState()
 	}));
+	
+	// Define sort fields
+	const sortFields = [
+		{ id: 'name', label: 'Name' },
+		{ id: 'value', label: 'Value' },
+		{ id: 'change', label: 'Change' },
+		{ id: 'changePercent', label: 'Percent Change' }
+	];
+	
+	// Create sort dropdown
+	const sortDropdown = createSortDropdown({
+		fields: sortFields,
+		defaultField: currentSortField,
+		defaultDirection: currentSortDirection,
+		onSort: (field, direction) => {
+			currentSortField = field;
+			currentSortDirection = direction;
+			updateContent();
+		}
+	});
+	
+	// Add sort dropdown to card header
+	const cardHeader = cardElement.querySelector('.card__header');
+	
+	// Create a container for the sort dropdown if it doesn't exist
+	let actionsContainer = cardElement.querySelector('.card__actions');
+	if (!actionsContainer) {
+		actionsContainer = document.createElement('div');
+		actionsContainer.className = 'card__actions';
+		cardHeader.appendChild(actionsContainer);
+	}
+	
+	// Add the sort dropdown to the actions container
+	actionsContainer.appendChild(sortDropdown);
+	
+	// Make sure icons are replaced
+	setTimeout(() => {
+		replaceIcons();
+	}, 0);
 
 	// Define the toggle flip function at the module level for proper event listener removal
 	const toggleFlip = function() {
@@ -317,18 +362,53 @@ export async function createMarketIndicesCard() {
 
 			// Log the indices data for debugging
 			console.log('Market indices data to display:', indicesToShow);
+			
+			// Sort the indices based on current sort field and direction
+			const sortedIndices = [...indicesToShow].sort((a, b) => {
+				let aValue, bValue;
+				
+				// Determine which field to sort by
+				switch (currentSortField) {
+					case 'name':
+						aValue = a.name;
+						bValue = b.name;
+						break;
+					case 'value':
+						aValue = a.value || 0;
+						bValue = b.value || 0;
+						break;
+					case 'change':
+						aValue = a.change || 0;
+						bValue = b.change || 0;
+						break;
+					case 'changePercent':
+						aValue = a.changePercent || 0;
+						bValue = b.changePercent || 0;
+						break;
+					default:
+						aValue = a.name;
+						bValue = b.name;
+				}
+				
+				// Apply sort direction
+				if (currentSortDirection === 'asc') {
+					return aValue > bValue ? 1 : -1;
+				} else {
+					return aValue < bValue ? 1 : -1;
+				}
+			});
 
 			const content = `
-        <div class="market-indices">
-          ${indicesToShow.map(index => createIndexItem({
-            name: index.name,
-            value: index.value,
-            change: index.change,
-            changePercent: index.changePercent,
-            additionalData: index.additionalData
-          })).join('')}
-        </div>
-      `;
+				<div class="market-indices">
+					${sortedIndices.map(index => createIndexItem({
+						name: index.name,
+						value: index.value,
+						change: index.change,
+						changePercent: index.changePercent,
+						additionalData: index.additionalData
+					})).join('')}
+				</div>
+			`;
 
 			const contentElement = cardElement.querySelector('.card__content');
 			if (contentElement) {
@@ -336,6 +416,9 @@ export async function createMarketIndicesCard() {
 				
 				// Set up the flipping animation
 				setupFlippingAnimation();
+				
+				// Replace icons
+				replaceIcons();
 			}
 
 			// Reset retry count on successful update
@@ -347,6 +430,9 @@ export async function createMarketIndicesCard() {
 			const contentElement = cardElement.querySelector('.card__content');
 			if (contentElement) {
 				contentElement.innerHTML = createErrorState('Unable to fetch market data. Please try again later.');
+				
+				// Replace icons
+				replaceIcons();
 			}
 
 			// Optional: Retry logic can stay or be removed based on your needs

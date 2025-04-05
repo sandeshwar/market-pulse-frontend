@@ -9,6 +9,7 @@ import React from 'react';
 import { SymbolSearch } from '../../common/SymbolSearch/SymbolSearch.jsx';
 import { DEFAULT_WATCHLIST_NAME, ensureDefaultWatchlist } from '../../../utils/watchlistUtils.js';
 import { DEFAULT_REFRESH_INTERVAL } from '../../../constants/marketConstants.js';
+import { SortDropdownReact } from '../../common/SortDropdown/SortDropdownReact.jsx';
 
 function createWatchlistItem({ symbol, name, price, change, changePercent, market = '', type = '' }) {
     const isPositive = change >= 0;
@@ -196,6 +197,8 @@ export function WatchlistCard({ title = 'Watchlist' }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [retryCount, setRetryCount] = useState(0);
+    const [sortField, setSortField] = useState('symbol'); // Default sort field
+    const [sortDirection, setSortDirection] = useState('asc'); // Default sort direction
     const MAX_RETRIES = 3;
 
     // Using the shared ensureDefaultWatchlist function from watchlistUtils.js
@@ -392,6 +395,59 @@ export function WatchlistCard({ title = 'Watchlist' }) {
             });
     };
 
+    // Handle sort change
+    const handleSortChange = (field) => {
+        if (field === sortField) {
+            // Toggle direction if clicking the same field
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            // Set new field and reset to ascending
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
+
+    // Get sorted stocks data
+    const getSortedStocksData = () => {
+        if (!stocksData || stocksData.length === 0) return [];
+
+        return [...stocksData].sort((a, b) => {
+            let aValue, bValue;
+
+            // Determine which field to sort by
+            switch (sortField) {
+                case 'symbol':
+                    aValue = a.symbol;
+                    bValue = b.symbol;
+                    break;
+                case 'price':
+                    aValue = a.price || 0;
+                    bValue = b.price || 0;
+                    break;
+                case 'change':
+                    aValue = a.change || 0;
+                    bValue = b.change || 0;
+                    break;
+                case 'changePercent':
+                    aValue = a.changePercent || 0;
+                    bValue = b.changePercent || 0;
+                    break;
+                default:
+                    aValue = a.symbol;
+                    bValue = b.symbol;
+            }
+
+            // Apply sort direction
+            if (sortDirection === 'asc') {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+    };
+
+    // We've removed the renderSortControls function as we're now using SortDropdownReact in the header
+
     // Render watchlist items
     const renderWatchlistItems = () => {
         if (loading) {
@@ -415,9 +471,11 @@ export function WatchlistCard({ title = 'Watchlist' }) {
             return <div className="loading">Loading stock data...</div>;
         }
 
+        const sortedStocks = getSortedStocksData();
+
         return (
             <div className="watchlist">
-                {stocksData.map(stock => (
+                {sortedStocks.map(stock => (
                     <div key={stock.symbol} className="watchlist-item" data-symbol={stock.symbol}>
                         <div className="watchlist-item-content">
                             <div className="stock-info">
@@ -439,12 +497,31 @@ export function WatchlistCard({ title = 'Watchlist' }) {
         );
     };
 
+    // Define sort fields
+    const sortFields = [
+        { id: 'symbol', label: 'Symbol' },
+        { id: 'price', label: 'Price' },
+        { id: 'change', label: 'Change' },
+        { id: 'changePercent', label: 'Percent Change' }
+    ];
+
     return (
         <div className="watchlist-card card">
             <div className="card__header">
                 <div className="card__title">
                     <i data-feather="star"></i>
                     {title}
+                </div>
+                <div className="card__actions">
+                    <SortDropdownReact
+                        fields={sortFields}
+                        defaultField={sortField}
+                        defaultDirection={sortDirection}
+                        onSort={(field, direction) => {
+                            setSortField(field);
+                            setSortDirection(direction);
+                        }}
+                    />
                 </div>
             </div>
             <div className="card__content">

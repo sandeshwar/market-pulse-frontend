@@ -1,5 +1,5 @@
 import { createTabNavigation } from './TabNavigation/TabNavigation.js';
-import { createMarketIndicesCard } from '../cards/MarketIndices/MarketIndices.js';
+import { createMarketIndicesCard } from '../cards/MarketIndices/MarketIndicesWithSortDropdown.js';
 // import { createWatchlistCard } from '../cards/Watchlist/Watchlist.jsx';
 // Import the React wrapper for future use
 import { createWatchlistCardReact } from '../cards/Watchlist/WatchlistReactWrapper.jsx';

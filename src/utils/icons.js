@@ -27,4 +27,6 @@ export const ICONS = {
   loader: 'loader',
   refreshCw: 'rotate-cw',
   alertCircle: 'alert-circle',
+  sortAsc: 'sliders', 
+  sortDesc: 'sliders', // Use the same icon for both directions
 };

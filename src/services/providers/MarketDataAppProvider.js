@@ -1,4 +1,3 @@
-import { MARKET_INDICES } from '../../constants/marketConstants.js';
 import { config } from '../../config.js';
 
 export class MarketDataAppProvider {

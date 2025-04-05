@@ -25,16 +25,7 @@ export const LOADING_STATES = {
   ERROR: 'error'
 };
 
-/**
- * Market indices configuration
- */
-export const MARKET_INDICES = {
-  'SPX': 'S&P 500',
-  'DJI': 'Dow Jones',
-  'IXIC': 'NASDAQ',
-  'NDX': 'NASDAQ 100',
-  'VIX': 'VIX',
-};
+
 
 /**
  * Market data constants

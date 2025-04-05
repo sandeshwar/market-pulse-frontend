@@ -5,6 +5,8 @@ import { getMarketId } from '../../../utils/marketStatus.js';
 import { marketDataService } from '../../../services/marketDataService.js';
 import { DEFAULT_REFRESH_INTERVAL, MAX_RETRIES, RETRY_DELAY } from '../../../constants/marketConstants.js';
 import { createElementFromHTML } from '../../../utils/dom.js';
+import { indicesWatchlistService } from '../../../services/indicesWatchlistService.js';
+import { ensureDefaultIndicesWatchlist } from '../../../utils/indicesWatchlistUtils.js';
 
 // Helper function to convert currency codes to symbols
 function getCurrencySymbol(currencyCode) {
@@ -121,6 +123,25 @@ export async function createMarketIndicesCard() {
 	let refreshInterval;
 	let retryCount = 0;
 	const flipIntervals = []; // Use const to avoid reassignment
+	
+	// Add a listener for watchlist changes with immediate refresh
+	const handleWatchlistUpdate = (updatedWatchlists) => {
+		console.log('Indices watchlist updated, refreshing display immediately', updatedWatchlists);
+		
+		// Force immediate update without waiting for the next refresh interval
+		// Cancel any pending updates first
+		if (refreshInterval) {
+			clearInterval(refreshInterval);
+		}
+		
+		// Update content immediately
+		updateContent();
+		
+		// Reset the refresh interval
+		if (isMounted) {
+			refreshInterval = setInterval(updateContent, DEFAULT_REFRESH_INTERVAL);
+		}
+	};
 
 	// Create initial card with loading state
 	const cardElement = createElementFromHTML(createCard({
@@ -192,19 +213,114 @@ export async function createMarketIndicesCard() {
 		if (!isMounted) return;
 
 		try {
-			const indices = await marketDataService.getAvailableIndices(); 
+			// Get all available indices from the market data service
+			const allIndices = await marketDataService.getAvailableIndices(); 
 			if (!isMounted) return;
 
-			if (!Array.isArray(indices) || indices.length === 0) {
+			if (!Array.isArray(allIndices) || allIndices.length === 0) {
 				throw new Error('No market data available');
 			}
 
+			// Try to get user's preferred indices from storage
+			let userIndices = [];
+			try {
+				const watchlist = await ensureDefaultIndicesWatchlist();
+				if (watchlist && watchlist.indices && watchlist.indices.length > 0) {
+					userIndices = watchlist.indices;
+					console.log('Using user preferred indices:', userIndices);
+				}
+			} catch (storageError) {
+				console.warn('Could not load user indices preferences:', storageError);
+				// Continue with location-based defaults if we can't get user preferences
+			}
+
+			// Define major global indices that should always be shown if available
+			const majorGlobalIndices = ['SPX', 'DJI', 'IXIC', 'FTSE', 'N225', 'HSI'];
+			
+			// Filter indices based on user preferences if available
+			let indicesToShow = [];
+			
+			if (userIndices.length > 0) {
+				// Filter to only show indices that the user has selected
+				indicesToShow = allIndices.filter(index => 
+					userIndices.includes(index.name)
+				);
+				
+				// If no matches found (possibly due to symbol name differences), 
+				// we'll fall back to location-based defaults below
+				if (indicesToShow.length === 0) {
+					console.warn('No matching indices found in user preferences, will use location-based defaults');
+				}
+			}
+			
+			// If no user preferences or no matches, use location-based defaults
+			if (indicesToShow.length === 0) {
+				// Try to get user's location/country
+				let userCountry = '';
+				try {
+					// Check if navigator.language is available (browser setting)
+					if (navigator.language) {
+						// Extract country code from locale (e.g., 'en-US' -> 'US')
+						const localeParts = navigator.language.split('-');
+						if (localeParts.length > 1) {
+							userCountry = localeParts[1].toUpperCase();
+						}
+					}
+					
+					console.log('Detected user country:', userCountry);
+				} catch (error) {
+					console.warn('Could not detect user country:', error);
+				}
+				
+				// Map of country codes to relevant indices
+				const countryIndicesMap = {
+					'US': ['SPX', 'DJI', 'IXIC', 'RUT'],
+					'GB': ['FTSE', 'UKX', 'MCX'],
+					'JP': ['N225', 'TOPX'],
+					'HK': ['HSI', 'HSCE'],
+					'CN': ['SSEC', 'SZSC', 'CSI300'],
+					'IN': ['NSEI', 'BSESN'],
+					'DE': ['GDAXI', 'MDAXI'],
+					'FR': ['FCHI', 'CAC40'],
+					'AU': ['AXJO', 'AORD'],
+					'CA': ['GSPTSE', 'TSX'],
+					'BR': ['BVSP', 'IBOV'],
+					'SG': ['STI'],
+					'KR': ['KS11', 'KOSPI'],
+					// Add more countries as needed
+				};
+				
+				// Get indices for user's country
+				let countryIndices = [];
+				if (userCountry && countryIndicesMap[userCountry]) {
+					countryIndices = countryIndicesMap[userCountry];
+				} else {
+					// Default to US indices if country not detected or not in our map
+					countryIndices = countryIndicesMap['US'];
+				}
+				
+				// Combine country-specific indices with major global indices
+				// Remove duplicates (some country indices might already be in global indices)
+				const defaultIndicesSet = new Set([...countryIndices, ...majorGlobalIndices]);
+				
+				// Filter available indices to match our default set
+				indicesToShow = allIndices.filter(index => 
+					defaultIndicesSet.has(index.name)
+				);
+				
+				// If still no matches (unlikely but possible), show top 5 indices
+				if (indicesToShow.length === 0) {
+					console.warn('No matching indices found for defaults, showing top 5');
+					indicesToShow = allIndices.slice(0, 5);
+				}
+			}
+
 			// Log the indices data for debugging
-			console.log('Market indices data:', indices);
+			console.log('Market indices data to display:', indicesToShow);
 
 			const content = `
         <div class="market-indices">
-          ${indices.map(index => createIndexItem({
+          ${indicesToShow.map(index => createIndexItem({
             name: index.name,
             value: index.value,
             change: index.change,
@@ -242,6 +358,9 @@ export async function createMarketIndicesCard() {
 		}
 	};
 
+	// Register the watchlist update listener
+	indicesWatchlistService.addListener(handleWatchlistUpdate);
+	
 	// Initial data load
 	await updateContent();
 
@@ -253,6 +372,10 @@ export async function createMarketIndicesCard() {
 	// Add cleanup method to the card
 	cardElement.cleanup = () => {
 		isMounted = false;
+		
+		// Remove the watchlist update listener
+		indicesWatchlistService.removeListener(handleWatchlistUpdate);
+		
 		if (refreshInterval) {
 			clearInterval(refreshInterval);
 			refreshInterval = null;

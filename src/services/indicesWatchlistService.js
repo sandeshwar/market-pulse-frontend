@@ -3,11 +3,15 @@ class IndicesWatchlistService {
         this.storageKey = 'indicesWatchlists';
         this.initialized = false;
         this.listeners = new Set();
+        this.watchlistsCache = null;
         
         // Listen for storage changes
-        if (chrome.storage) {
+        if (typeof chrome !== 'undefined' && chrome.storage) {
             chrome.storage.onChanged.addListener((changes, area) => {
                 if (area === 'sync' && changes[this.storageKey]) {
+                    // Update our cache
+                    this.watchlistsCache = changes[this.storageKey].newValue;
+                    // Notify listeners with the new value
                     this.notifyListeners(changes[this.storageKey].newValue);
                 }
             });
@@ -16,6 +20,14 @@ class IndicesWatchlistService {
 
     addListener(callback) {
         this.listeners.add(callback);
+        
+        // If we already have data cached, immediately notify the new listener
+        if (this.watchlistsCache) {
+            // Use setTimeout to make this async and avoid potential issues
+            setTimeout(() => {
+                callback(this.watchlistsCache);
+            }, 0);
+        }
     }
 
     removeListener(callback) {
@@ -23,7 +35,14 @@ class IndicesWatchlistService {
     }
 
     notifyListeners(watchlists) {
-        this.listeners.forEach(callback => callback(watchlists));
+        console.log('Notifying indices watchlist listeners with:', watchlists);
+        this.listeners.forEach(callback => {
+            try {
+                callback(watchlists);
+            } catch (error) {
+                console.error('Error in indices watchlist listener:', error);
+            }
+        });
     }
 
     async initializeStorage() {
@@ -38,6 +57,9 @@ class IndicesWatchlistService {
             const data = await chrome.storage.sync.get(this.storageKey);
             if (!data[this.storageKey]) {
                 await chrome.storage.sync.set({ [this.storageKey]: [] });
+                this.watchlistsCache = [];
+            } else {
+                this.watchlistsCache = data[this.storageKey];
             }
             this.initialized = true;
         } catch (error) {
@@ -49,8 +71,14 @@ class IndicesWatchlistService {
     async getWatchlists() {
         await this.initializeStorage();
         try {
+            // If we have a cache, use it for faster response
+            if (this.watchlistsCache) {
+                return this.watchlistsCache;
+            }
+            
             const data = await chrome.storage.sync.get(this.storageKey);
-            return data[this.storageKey] || [];
+            this.watchlistsCache = data[this.storageKey] || [];
+            return this.watchlistsCache;
         } catch (error) {
             console.error('Failed to get indices watchlists:', error);
             return [];
@@ -71,6 +99,11 @@ class IndicesWatchlistService {
 
         watchlists.push(newWatchlist);
         await chrome.storage.sync.set({ [this.storageKey]: watchlists });
+        
+        // Update cache and notify listeners directly
+        this.watchlistsCache = watchlists;
+        this.notifyListeners(watchlists);
+        
         return newWatchlist;
     }
 
@@ -83,6 +116,11 @@ class IndicesWatchlistService {
 
         watchlist.name = newName;
         await chrome.storage.sync.set({ [this.storageKey]: watchlists });
+        
+        // Update cache and notify listeners directly
+        this.watchlistsCache = watchlists;
+        this.notifyListeners(watchlists);
+        
         return watchlist;
     }
 
@@ -90,6 +128,11 @@ class IndicesWatchlistService {
         const watchlists = await this.getWatchlists();
         const updatedWatchlists = watchlists.filter(w => w.name !== name);
         await chrome.storage.sync.set({ [this.storageKey]: updatedWatchlists });
+        
+        // Update cache and notify listeners directly
+        this.watchlistsCache = updatedWatchlists;
+        this.notifyListeners(updatedWatchlists);
+        
         return true;
     }
 
@@ -139,6 +182,11 @@ class IndicesWatchlistService {
         }
 
         await chrome.storage.sync.set({ [this.storageKey]: watchlists });
+        
+        // Update cache and notify listeners directly
+        this.watchlistsCache = watchlists;
+        this.notifyListeners(watchlists);
+        
         return watchlist.indices;
     }
 
@@ -167,6 +215,11 @@ class IndicesWatchlistService {
         }
 
         await chrome.storage.sync.set({ [this.storageKey]: watchlists });
+        
+        // Update cache and notify listeners directly
+        this.watchlistsCache = watchlists;
+        this.notifyListeners(watchlists);
+        
         return watchlist.indices;
     }
 }

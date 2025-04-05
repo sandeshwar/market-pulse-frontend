@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IndicesSearch } from '../../common/IndicesSearch/IndicesSearch.jsx';
 import { indicesWatchlistService } from '../../../services/indicesWatchlistService.js';
 import { ICONS } from '../../../utils/icons.js';
@@ -11,6 +11,7 @@ export function IndicesSettingsReact() {
   const [watchlist, setWatchlist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [renderKey, setRenderKey] = useState(0); // Add a key to force re-render
 
   // Load watchlist data on component mount
   const loadWatchlistData = async () => {
@@ -19,6 +20,9 @@ export function IndicesSettingsReact() {
       const watchlist = await ensureDefaultIndicesWatchlist();
       setWatchlist(watchlist);
       setError(null);
+      
+      // Increment render key to force a complete re-render
+      setRenderKey(prev => prev + 1);
     } catch (error) {
       console.error('Failed to load indices watchlist data:', error);
       setError('Failed to load indices watchlist data');
@@ -38,20 +42,37 @@ export function IndicesSettingsReact() {
     return () => indicesWatchlistService.removeListener(loadWatchlistData);
   }, []);
 
+  // Effect to replace icons after each render
+  useEffect(() => {
+    // Replace icons after the component has rendered
+    setTimeout(() => {
+      replaceIcons();
+    }, 0);
+  }, [renderKey, watchlist]); // Re-run when watchlist or renderKey changes
+
   const handleIndexSelect = (index) => {
     // If watchlist is not available, ensure the default watchlist exists first
     if (!watchlist) {
       ensureDefaultIndicesWatchlist()
-        .then(watchlist => {
+        .then(newWatchlist => {
+          // Create optimistic update
+          const optimisticWatchlist = {
+            ...newWatchlist,
+            indices: [...(newWatchlist.indices || []), index.symbol || index]
+          };
+          setWatchlist(optimisticWatchlist);
+
           return indicesWatchlistService.addIndex(DEFAULT_INDICES_WATCHLIST_NAME, index);
         })
         .then(() => {
-          // Refresh watchlist data
-          loadWatchlistData();
+          // No need to refresh data here as the service will notify listeners
+          console.log('Index added successfully');
         })
         .catch((error) => {
           console.error('Failed to add index:', error);
           alert('Failed to add index: ' + error.message);
+          // Revert to the actual data on error
+          loadWatchlistData();
         });
       return;
     }
@@ -59,15 +80,25 @@ export function IndicesSettingsReact() {
     // Use the watchlist name from watchlist, or fall back to DEFAULT_INDICES_WATCHLIST_NAME
     const watchlistName = watchlist.name || DEFAULT_INDICES_WATCHLIST_NAME;
 
+    // Create optimistic update for better responsiveness
+    const indexSymbol = index.symbol || index;
+    const optimisticWatchlist = {
+      ...watchlist,
+      indices: [...watchlist.indices, indexSymbol]
+    };
+    setWatchlist(optimisticWatchlist);
+
     // Pass the full index object to store additional data
     indicesWatchlistService.addIndex(watchlistName, index)
       .then(() => {
-        // Refresh watchlist data
-        loadWatchlistData();
+        // No need to refresh data here as the service will notify listeners
+        console.log('Index added successfully');
       })
       .catch((error) => {
         console.error('Failed to add index:', error);
         alert('Failed to add index: ' + error.message);
+        // Revert to the actual data on error
+        loadWatchlistData();
       });
   };
 
@@ -75,15 +106,25 @@ export function IndicesSettingsReact() {
     if (!watchlist) return;
 
     const watchlistName = watchlist.name || DEFAULT_INDICES_WATCHLIST_NAME;
-    
+
+    // Optimistically update the UI first for better responsiveness
+    const optimisticWatchlist = {
+      ...watchlist,
+      indices: watchlist.indices.filter(idx => idx !== indexSymbol)
+    };
+    setWatchlist(optimisticWatchlist);
+
+    // Then perform the actual update
     indicesWatchlistService.removeIndex(watchlistName, indexSymbol)
       .then(() => {
-        // Refresh watchlist data
-        loadWatchlistData();
+        // No need to refresh data here as the service will notify listeners
+        console.log('Index removed successfully');
       })
       .catch((error) => {
         console.error('Failed to remove index:', error);
         alert('Failed to remove index: ' + error.message);
+        // Revert to the actual data on error
+        loadWatchlistData();
       });
   };
 
@@ -103,7 +144,7 @@ export function IndicesSettingsReact() {
       <div className="watchlist-symbols">
         <div className="symbols-grid">
           {watchlist.indices.map(indexSymbol => (
-            <div className="symbol-card" key={indexSymbol}>
+            <div className="symbol-card" key={`${indexSymbol}-${renderKey}`}>
               <div className="symbol-card__content">
                 <div className="symbol-card__header">
                   <span className="symbol-ticker">{indexSymbol}</span>

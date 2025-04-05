@@ -7,6 +7,7 @@
 .index-item {
   position: relative;
   padding: var(--spacing-xs);
+  padding-left: var(--spacing-md);
   border-radius: var(--border-radius-sm);
   background-color: var(--bg-primary);
   height: 100px; /* Fixed height for consistent flipping */

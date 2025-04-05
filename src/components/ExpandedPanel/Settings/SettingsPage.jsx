@@ -6,6 +6,7 @@ import { createCard } from '../../common/Card/Card.js';
 import { ICONS } from '../../../utils/icons.js';
 import { replaceIcons } from '../../../utils/feather.js';
 import { ensureDefaultWatchlist, DEFAULT_WATCHLIST_NAME } from '../../../utils/watchlistUtils.js';
+import { createIndicesSettingsReact } from './IndicesSettingsReact.jsx';
 
 export async function createSettingsPage() {
   // Create a wrapper element
@@ -35,6 +36,10 @@ export async function createSettingsPage() {
   setTimeout(async () => {
     await initializeWatchlistSettings(watchlistCard);
   }, 0);
+
+  // Add the indices settings page (React version)
+  const indicesSettingsPage = await createIndicesSettingsReact();
+  settingsPage.appendChild(indicesSettingsPage);
 
   return settingsPage;
 }

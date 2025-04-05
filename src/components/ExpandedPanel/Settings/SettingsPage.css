@@ -2,10 +2,11 @@
   display: flex;
   flex-direction: column;
   padding: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 /* Card styling */
-.card--watchlist {
+.card--watchlist, .card--indices-watchlist {
   margin-bottom: var(--spacing-md);
   border-radius: var(--border-radius-lg);
   /* box-shadow: var(--shadow-md); */
@@ -13,7 +14,7 @@
 }
 
 /* Watchlist content styling */
-.watchlist-content {
+.watchlist-content, .indices-watchlist-content {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
@@ -34,14 +35,14 @@
 }
 
 /* Symbols grid styling */
-.symbols-grid {
+.symbols-grid, .indices-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-md);
 }
 
-.symbol-card {
+.symbol-card, .index-card {
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius-md);
   overflow: hidden;
@@ -50,45 +51,45 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.symbol-card:hover {
+.symbol-card:hover, .index-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
 }
 
-.symbol-card__content {
+.symbol-card__content, .index-card__content {
   padding: var(--spacing-sm);
 }
 
-.symbol-card__header {
+.symbol-card__header, .index-card__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-xs);
 }
 
-.symbol-ticker {
+.symbol-ticker, .index-ticker {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.symbol-card__details {
+.symbol-card__details, .index-card__details {
   display: flex;
   flex-direction: column;
 }
 
-.symbol-label {
+.symbol-label, .index-label {
   font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
 /* Search section styling */
-.watchlist-search-section {
+.watchlist-search-section, .indices-watchlist-search-section {
   padding-top: var(--spacing-md);
   /* border-top: 1px solid rgba(255, 255, 255, 0.1); */
 }
 
-.symbol-search-container {
+.symbol-search-container, .indices-search-container {
   margin-top: var(--spacing-sm);
 }
 

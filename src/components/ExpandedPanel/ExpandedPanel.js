@@ -43,7 +43,7 @@ export async function createExpandedPanel() {
 
   // Add navigation and initialize icons
   panel.appendChild(createTabNavigation());
-  
+
   const panelContent = document.createElement('div');
   panelContent.className = 'panel-content';
   

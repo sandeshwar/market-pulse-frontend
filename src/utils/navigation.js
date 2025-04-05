@@ -16,6 +16,11 @@ export function switchTab(tabId) {
   // Update content visibility
   document.querySelectorAll('.tab-content').forEach(content => {
     content.style.display = content.dataset.tab === tabId ? 'block' : 'none';
+
+    // Reset scroll position when switching tabs
+    if (content.dataset.tab === tabId) {
+      content.scrollTop = 0;
+    }
   });
   
   // Re-initialize Feather icons for newly visible content

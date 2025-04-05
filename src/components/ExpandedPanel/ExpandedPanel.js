@@ -51,7 +51,8 @@ export async function createExpandedPanel() {
   const homeTab = document.createElement('div');
   homeTab.className = 'tab-content';
   homeTab.dataset.tab = 'home';
-  homeTab.appendChild(marketIndicesCard.cloneNode(true));
+  // Don't clone the marketIndicesCard as it loses event listeners and timeouts
+  homeTab.appendChild(marketIndicesCard);
   homeTab.appendChild(watchlistCard);
   panelContent.appendChild(homeTab);
   
@@ -68,7 +69,12 @@ export async function createExpandedPanel() {
   marketsTab.className = 'tab-content';
   marketsTab.dataset.tab = 'markets';
   marketsTab.style.display = 'none';
-  marketsTab.appendChild(marketIndicesCard);
+  // Create a new instance of marketIndicesCard for the Markets tab
+  createMarketIndicesCard().then(newMarketIndicesCard => {
+    marketsTab.appendChild(newMarketIndicesCard);
+    // Add the cleanup function to our set
+    cleanupFunctions.add(newMarketIndicesCard.cleanup);
+  });
   panelContent.appendChild(marketsTab);
   
   // News tab

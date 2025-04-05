@@ -24,9 +24,9 @@ export class MarketDataAppProvider {
     try {
       await this.initialize();
 
-      // Use our dedicated market indices API endpoint
+      // Use the new Rust API endpoint for indices
       const response = await fetch(
-        `${config.API_URL}indices`,
+        `${config.API_URL}indices/all`,
         {
           method: 'GET',
           headers: {
@@ -44,22 +44,30 @@ export class MarketDataAppProvider {
 
       const data = await response.json();
 
-      if (!data || !data.indices) {
+      // Log the entire response for debugging
+      console.log('Indices API Response data:', data);
+
+      if (!data || !data.prices) {
         throw new Error('Invalid response format from indices API');
       }
 
       // Transform the response to match our expected format
-      const validQuotes = Object.entries(data.indices).map(([symbol, index]) => {
+      const validQuotes = Object.entries(data.prices).map(([symbol, indexData]) => {
         // Only include indices that are in our MARKET_INDICES constant
         if (!MARKET_INDICES[symbol]) {
           return null;
         }
 
+        // Extract the name from additional_data or use our constant
+        const name = indexData.additional_data?.name || MARKET_INDICES[symbol];
+
         return {
-          name: MARKET_INDICES[symbol],
-          value: index.value,
-          change: index.change,
-          changePercent: index.percent_change
+          name: name,
+          value: indexData.price,
+          change: indexData.change,
+          changePercent: indexData.percent_change,
+          // Include additional data that might be useful
+          additionalData: indexData.additional_data
         };
       }).filter(quote => quote !== null);
 

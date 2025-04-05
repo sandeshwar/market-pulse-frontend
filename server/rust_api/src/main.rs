@@ -113,7 +113,7 @@ async fn main() {
         });
 
     // Run the server
-    let port = std::env::var("API_PORT").unwrap_or_else(|_| "3001".to_string()).parse::<u16>().unwrap_or(3001);
+    let port = std::env::var("API_PORT").unwrap_or_else(|_| "3100".to_string()).parse::<u16>().unwrap_or(3100);
     let host = std::env::var("API_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
 
     let addr_str = format!("{}:{}", host, port);

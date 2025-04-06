@@ -1,13 +1,13 @@
 .settings-page {
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-sm);
-  gap: var(--spacing-md);
+  padding: var(--spacing-xs);
+  gap: var(--spacing-sm);
 }
 
 /* Card styling */
 .card--watchlist, .card--indices-watchlist {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
   border-radius: var(--border-radius-lg);
   /* box-shadow: var(--shadow-md); */
   /* overflow: hidden; */
@@ -17,7 +17,7 @@
 .watchlist-content, .indices-watchlist-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .watchlist-title {
@@ -39,7 +39,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .symbol-card, .index-card {
@@ -85,7 +85,7 @@
 
 /* Search section styling */
 .watchlist-search-section, .indices-watchlist-search-section {
-  padding-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
   /* border-top: 1px solid rgba(255, 255, 255, 0.1); */
 }
 

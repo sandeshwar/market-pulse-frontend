@@ -44,14 +44,14 @@
 }
 
 .card__content {
-  padding: var(--spacing-md) 0;
+  padding: var(--spacing-md);
   /* Ensure dropdowns can extend beyond the card content */
   overflow: visible;
 }
 
-/* Keep regular padding for non-settings cards */
-.card:not(.settings-page .card) .card__content {
-  padding: var(--spacing-md);
-  /* Ensure dropdowns can extend beyond the card content */
+/* Special padding for settings page cards if needed */
+.settings-page .card .card__content {
+  /* Slightly reduced padding for settings page cards */
+  padding: var(--spacing-sm);
   overflow: visible;
 }

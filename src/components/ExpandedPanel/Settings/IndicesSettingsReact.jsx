@@ -135,7 +135,7 @@ export function IndicesSettingsReact() {
         <div className="empty-state">
           <i data-feather={ICONS.alertCircle}></i>
           <p>No indices in your watchlist</p>
-          <p className="empty-state__hint">Use the search below to add indices</p>
+          <p className="empty-state__hint">Use the search above to add indices</p>
         </div>
       );
     }

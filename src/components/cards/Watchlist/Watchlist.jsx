@@ -462,7 +462,7 @@ export function WatchlistCard({ title = 'Watchlist' }) {
             return (
                 <div className="empty-state">
                     <p>No stocks in watchlist</p>
-                    <p className="hint">Use the search box below to add stocks</p>
+                    <p className="hint">Add stocks in Settings → Watchlist</p>
                 </div>
             );
         }

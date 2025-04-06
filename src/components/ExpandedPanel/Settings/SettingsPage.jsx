@@ -78,7 +78,7 @@ async function initializeWatchlistSettings(containerElement) {
           </div>
         </div>
       `
-      : `<div class="empty-state"><i data-feather="${ICONS.alertCircle}"></i><p>No symbols in your watchlist</p><p class="empty-state__hint">Use the search below to add symbols</p></div>`;
+      : `<div class="empty-state"><i data-feather="${ICONS.alertCircle}"></i><p>No stocks in your watchlist</p><p class="empty-state__hint">Use the search above to add stocks</p></div>`;
 
     // Render the content
     cardContent.innerHTML = `

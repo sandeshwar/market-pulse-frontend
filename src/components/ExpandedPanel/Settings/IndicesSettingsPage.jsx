@@ -73,7 +73,7 @@ async function initializeIndicesWatchlistSettings(containerElement) {
           </div>
         </div>
       `
-      : `<div class="empty-state"><i data-feather="${ICONS.alertCircle}"></i><p>No indices in your watchlist</p><p class="empty-state__hint">Use the search below to add indices</p></div>`;
+      : `<div class="empty-state"><i data-feather="${ICONS.alertCircle}"></i><p>No indices in your watchlist</p><p class="empty-state__hint">Use the search above to add indices</p></div>`;
 
     // Render the content
     cardContent.innerHTML = `

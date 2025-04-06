@@ -267,15 +267,24 @@ impl TiingoNewsClient {
         // Convert to our internal model
         match tiingo_response {
             TiingoNewsResponse::Articles(articles) => {
-                let article_count = articles.len();
-                tracing::debug!("Received array response with {} articles", article_count);
-                let processed_articles = articles.into_iter()
+                let original_count = articles.len();
+                tracing::debug!("Received array response with {} articles", original_count);
+
+                // Use a HashSet to track unique titles and filter out duplicates
+                let mut unique_titles = std::collections::HashSet::new();
+                let processed_articles: Vec<NewsArticle> = articles.into_iter()
                     .map(|article| convert_tiingo_article(article))
+                    .filter(|article| unique_titles.insert(article.title.clone()))
                     .collect();
+
+                let unique_count = processed_articles.len();
+                if unique_count < original_count {
+                    tracing::info!("Filtered out {} duplicate news articles", original_count - unique_count);
+                }
 
                 Ok(NewsResponse {
                     articles: processed_articles,
-                    total_count: Some(article_count),
+                    total_count: Some(unique_count), // Update count to reflect unique articles
                     next_cursor: None,
                 })
             }

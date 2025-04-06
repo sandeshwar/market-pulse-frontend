@@ -8,6 +8,9 @@ import { createSettingsPage } from './Settings/SettingsPage.jsx';
 import { replaceIcons } from '../../utils/feather.js';
 
 
+// Import the branding component
+import { createBranding } from '../common/Branding/Branding.js';
+
 export async function createExpandedPanel() {
   // Create components that need cleanup
   const marketIndicesCard = await createMarketIndicesCard();
@@ -94,6 +97,10 @@ export async function createExpandedPanel() {
   panelContent.appendChild(settingsTab);
   
   panel.appendChild(panelContent);
+
+  // Create and add branding element
+  const branding = createBranding();
+  panel.appendChild(branding);
 
   // Initialize icons after all DOM elements are added
   await replaceIcons();

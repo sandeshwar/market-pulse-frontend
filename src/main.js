@@ -154,7 +154,7 @@ if (chrome.sidePanel) {
 // Initialize the application
 async function initializeApp() {
   setupButtonEventListeners();
-  
+
   const wireframeContainer = document.createElement('div');
   wireframeContainer.className = 'wireframe-container';
 
@@ -166,8 +166,11 @@ async function initializeApp() {
     const panel = await createExpandedPanel();
     cleanupCurrentPanel(); // Cleanup any existing panel
     currentPanel = panel;
-    
+
+    // Add the panel to the container
     sidePanelContainer.appendChild(panel);
+
+    // Add the side panel container to the wireframe
     wireframeContainer.appendChild(sidePanelContainer);
     document.body.appendChild(wireframeContainer);
 
@@ -176,7 +179,7 @@ async function initializeApp() {
 
     // Initialize Feather icons
     await replaceIcons();
-    
+
     // Hide loading screen with fade-out animation
     const loadingScreen = document.getElementById('loading-screen');
     if (loadingScreen) {
@@ -187,15 +190,24 @@ async function initializeApp() {
     }
   } catch (error) {
     console.error('Failed to initialize application:', error);
-    sidePanelContainer.innerHTML = `
+
+    // Create error panel
+    const errorPanel = document.createElement('div');
+    errorPanel.className = 'side-panel';
+    errorPanel.innerHTML = `
       <div class="error-state">
         <i data-feather="alert-triangle"></i>
         <p>Failed to load application. Please try again later.</p>
       </div>
     `;
+
+    // Replace the content with our error panel
+    sidePanelContainer.innerHTML = '';
+    sidePanelContainer.appendChild(errorPanel);
     wireframeContainer.appendChild(sidePanelContainer);
+
     document.body.appendChild(wireframeContainer);
-    
+
     // Hide loading screen even on error
     const loadingScreen = document.getElementById('loading-screen');
     if (loadingScreen) {

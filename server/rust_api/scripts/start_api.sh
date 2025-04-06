@@ -85,9 +85,24 @@ fi
 # Build the API if not skipped
 if [ "$SKIP_BUILD" = false ]; then
     echo "Building the API..."
+
+    # Check if OpenSSL is installed and set OPENSSL_DIR if needed
+    if command -v openssl >/dev/null 2>&1; then
+        OPENSSL_PATH=$(which openssl)
+        OPENSSL_DIR=$(dirname $(dirname $OPENSSL_PATH))
+        echo "Found OpenSSL at $OPENSSL_PATH, setting OPENSSL_DIR=$OPENSSL_DIR"
+        export OPENSSL_DIR=$OPENSSL_DIR
+    else
+        echo "WARNING: OpenSSL not found in PATH. Build might fail."
+    fi
+
     cargo build
     if [ $? -ne 0 ]; then
         echo "Failed to build the API. Please check the build errors."
+        echo "If the error is related to OpenSSL, try installing OpenSSL development packages:"
+        echo "  For Debian/Ubuntu: sudo apt-get install pkg-config libssl-dev"
+        echo "  For Red Hat/CentOS/Fedora: sudo yum install openssl-devel"
+        echo "  For Alpine Linux: apk add openssl-dev"
         exit 1
     fi
 fi

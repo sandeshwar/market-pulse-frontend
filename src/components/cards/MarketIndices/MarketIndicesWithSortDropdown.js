@@ -88,7 +88,7 @@ function createIndexItem({ name, value, change, changePercent, additionalData = 
 	`;
 
 	return `
-    <div class="index-item" data-index="${name}">
+    <div class="index-item ${changeClass}" data-index="${name}">
       ${createMarketStatus(marketId)}
       <div class="index-item-inner">
         ${frontFace}

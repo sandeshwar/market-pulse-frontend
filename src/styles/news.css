@@ -44,7 +44,7 @@
 .news-card-meta {
   display: flex;
   align-items: center;
-  margin-bottom: 4px; /* Reduced from 8px */
+  margin-top: auto; /* Push to bottom of card */
   font-size: 11px; /* Reduced from 12px */
   color: var(--text-tertiary);
 }
@@ -57,20 +57,7 @@
   color: var(--text-tertiary);
 }
 
-.news-card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px; /* Reduced from 4px */
-}
-
-.news-card-tag {
-  padding: 1px 4px; /* Reduced from 2px 6px */
-  border-radius: 3px; /* Reduced from 4px */
-  background-color: var(--tag-bg);
-  color: var(--tag-text);
-  font-size: 10px; /* Reduced from 11px */
-  font-weight: 500;
-}
+/* News card tags removed to reduce clutter */
 
 .news-card-image-container {
   width: 60px; /* Reduced from 80px */
@@ -116,14 +103,43 @@
   gap: 6px; /* Reduced from 8px */
 }
 
-.news-mode-selector {
-  padding: 4px 8px; /* Reduced from 6px 10px */
-  border-radius: 3px; /* Reduced from 4px */
+/* Filter controls */
+.news-filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-secondary, #f5f5f5);
+}
+
+.news-filter-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+  flex: 1;
+}
+
+.news-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.news-filter-select {
+  padding: 4px 6px;
+  border-radius: 3px;
   border: 1px solid var(--border-color);
   background-color: var(--input-bg);
   color: var(--text-primary);
-  font-size: 12px; /* Reduced from 14px */
-  cursor: pointer;
+  font-size: 11px;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.news-filter-select option {
+  padding: 2px 4px;
 }
 
 .news-panel-content {
@@ -198,6 +214,21 @@
   .news-panel-title {
     font-size: 15px;
   }
+
+  /* Filter controls on mobile */
+  .news-filter-controls {
+    flex-direction: column;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .news-filter-selector {
+    width: 100%;
+  }
+
+  .news-filter-select {
+    max-height: 60px;
+  }
 }
 
 /* Dark mode adjustments */
@@ -214,5 +245,21 @@
   .news-card-tag {
     background-color: var(--tag-bg-dark, #3a3a3a);
     color: var(--tag-text-dark, #e0e0e0);
+  }
+
+  /* Dark mode filter controls */
+  .news-filter-controls {
+    background-color: var(--bg-secondary-dark, #222222);
+    border-color: var(--border-color-dark, #444444);
+  }
+
+  .news-filter-select {
+    background-color: var(--input-bg-dark, #333333);
+    border-color: var(--border-color-dark, #444444);
+    color: var(--text-primary-dark, #e0e0e0);
+  }
+
+  .news-filter-label {
+    color: var(--text-secondary-dark, #b0b0b0);
   }
 }

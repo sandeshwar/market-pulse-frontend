@@ -6,29 +6,145 @@
   overflow: hidden;
 }
 
+/* No scrollbar customization needed */
+
+/* Animation for new items */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card actions styling for the filter dropdown and refresh button */
+.card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Refresh button styling */
+.news-refresh-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.news-refresh-button:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.news-refresh-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Rotation animation for refresh */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.news-refresh-button.rotating svg {
+  animation: rotate 1s linear;
+}
+
 .card .breaking-news .news-list {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm); /* Reduced from spacing-lg */
+  overflow: visible; /* Ensure no scrollbar appears */
+  max-height: none; /* Remove any max-height constraint */
+  width: 100% !important;
 }
 
 .card .breaking-news .news-list .news-item {
   position: relative;
-  padding: var(--spacing-sm); /* Reduced from spacing-md */
+  padding: 8px 8px 8px 12px; /* Add left padding for indicator */
   cursor: pointer;
   display: flex;
   background: var(--bg-secondary);
-  border-radius: var(--border-radius-md); /* Reduced from border-radius-lg */
+  border-radius: var(--border-radius-sm);
   width: 100% !important;
   box-sizing: border-box !important;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent; /* For the indicator */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.5s ease-out;
 }
 
 .card .breaking-news .news-list .news-item:not(:last-child) {
-  margin-bottom: var(--spacing-sm); /* Reduced from calc(var(--spacing-lg) + 10px) */
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 8px;
 }
+
+/* Hover effect */
 .card .breaking-news .news-list .news-item:hover {
   background-color: var(--bg-primary);
+  transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Colored left border indicators based on freshness */
+/* Using :has() for modern browsers */
+.card .breaking-news .news-list .news-item:has(.news-time-fresh) {
+  border-left-color: #10b981; /* Green */
+}
+
+.card .breaking-news .news-list .news-item:has(.news-time-recent) {
+  border-left-color: #3b82f6; /* Blue */
+}
+
+.card .breaking-news .news-list .news-item:has(.news-time-today) {
+  border-left-color: #8b5cf6; /* Purple */
+}
+
+.card .breaking-news .news-list .news-item:has(.news-time-week) {
+  border-left-color: #9ca3af; /* Gray */
+}
+
+.card .breaking-news .news-list .news-item:has(.news-time-old) {
+  border-left-color: #d1d5db; /* Light gray */
+}
+
+/* Fallback for browsers that don't support :has() */
+.card .breaking-news .news-list .news-item.news-item-fresh {
+  border-left-color: #10b981; /* Green */
+}
+
+.card .breaking-news .news-list .news-item.news-item-recent {
+  border-left-color: #3b82f6; /* Blue */
+}
+
+.card .breaking-news .news-list .news-item.news-item-today {
+  border-left-color: #8b5cf6; /* Purple */
+}
+
+.card .breaking-news .news-list .news-item.news-item-week {
+  border-left-color: #9ca3af; /* Gray */
+}
+
+.card .breaking-news .news-list .news-item.news-item-old {
+  border-left-color: #d1d5db; /* Light gray */
 }
 
 .card .breaking-news .news-list .news-item .news-content {
@@ -39,11 +155,44 @@
 
 .card .breaking-news .news-list .news-item .news-content .news-title {
   font-weight: 600;
-  font-size: 13px; /* Reduced from 14px */
-  line-height: 1.3; /* Reduced from 1.4 */
+  font-size: 12px; /* Further reduced for more compact display */
+  line-height: 1.3;
   color: var(--text-primary);
-  margin-bottom: var(--spacing-sm); /* Reduced from spacing-md */
+  margin-bottom: var(--spacing-xs); /* Further reduced spacing */
   display: block !important;
+  max-height: 2.6em; /* Limit to 2 lines */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* New badge styling */
+.card .breaking-news .news-list .news-item .news-badge {
+  display: inline-block;
+  background-color: #ef4444; /* Red */
+  color: white;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 3px;
+  margin-left: 5px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .card .breaking-news .news-list .news-item .news-content .news-meta {
@@ -56,14 +205,38 @@
 .card .breaking-news .news-list .news-item .news-content .news-source {
   font-size: 11px; /* Reduced from 12px */
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
 }
 
-.card .breaking-news .news-list .news-item .news-content .news-symbol {
-  font-size: 12px; /* Reduced from 14px */
+/* Time freshness indicators */
+.card .breaking-news .news-list .news-item .news-content .news-time-fresh {
+  color: #10b981; /* Green for very fresh news */
   font-weight: 600;
-  color: var(--text-accent);
-  margin-bottom: var(--spacing-xs); /* Reduced from spacing-sm */
 }
+
+.card .breaking-news .news-list .news-item .news-content .news-time-recent {
+  color: #3b82f6; /* Blue for recent news */
+}
+
+.card .breaking-news .news-list .news-item .news-content .news-time-today {
+  color: #8b5cf6; /* Purple for today's news */
+}
+
+.card .breaking-news .news-list .news-item .news-content .news-time-week {
+  color: var(--text-secondary); /* Default color for this week's news */
+}
+
+.card .breaking-news .news-list .news-item .news-content .news-time-old {
+  color: #9ca3af; /* Gray for older news */
+  font-style: italic;
+}
+
+.card .breaking-news .news-list .news-item .news-content .news-time-unknown {
+  color: #ef4444; /* Red for unknown dates */
+}
+
+/* News symbol removed to reduce clutter */
 
 .card .breaking-news .loading {
   text-align: center;
@@ -77,6 +250,16 @@
   padding: var(--spacing-md); /* Reduced from spacing-lg */
   color: var(--text-error);
   font-size: 12px; /* Added smaller font size */
+}
+
+/* Last updated timestamp */
+.card .breaking-news .news-last-updated {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-tertiary, #9ca3af);
+  margin-top: 8px;
+  font-style: italic;
+  opacity: 0.8;
 }
 
 .breaking-news .news-item svg {

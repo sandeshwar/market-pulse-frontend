@@ -15,7 +15,7 @@ function createWatchlistItem({ symbol, name, price, change, changePercent, marke
     const isPositive = change >= 0;
     const changeClass = isPositive ? 'positive' : 'negative';
     return `
-    <div class="watchlist-item" data-symbol="${symbol}">
+    <div class="watchlist-item ${changeClass}" data-symbol="${symbol}">
       <div class="watchlist-item-content">
         <div class="stock-info">
           <div class="stock-symbol">${symbol}</div>
@@ -476,7 +476,7 @@ export function WatchlistCard({ title = 'Watchlist' }) {
         return (
             <div className="watchlist">
                 {sortedStocks.map(stock => (
-                    <div key={stock.symbol} className="watchlist-item" data-symbol={stock.symbol}>
+                    <div key={stock.symbol} className={`watchlist-item ${stock.change >= 0 ? 'positive' : 'negative'}`} data-symbol={stock.symbol}>
                         <div className="watchlist-item-content">
                             <div className="stock-info">
                                 <div className="stock-symbol">{stock.symbol}</div>

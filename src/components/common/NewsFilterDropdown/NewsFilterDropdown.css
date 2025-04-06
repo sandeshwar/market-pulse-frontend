@@ -1,0 +1,103 @@
+.news-filter-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.filter-icon {
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.filter-icon svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+}
+
+.filter-icon:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.filter-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: var(--bg-primary);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+  z-index: 100;
+  overflow: hidden;
+  display: none;
+}
+
+.filter-menu.active {
+  display: block;
+}
+
+.filter-menu-header {
+  padding: 8px 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9rem;
+}
+
+.filter-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 0.2s;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.filter-option:hover {
+  background-color: var(--hover-bg);
+}
+
+.filter-option.active {
+  background-color: var(--hover-bg);
+  font-weight: 500;
+}
+
+.filter-indicator {
+  margin-left: 8px;
+  color: var(--text-accent);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .filter-menu {
+    background-color: var(--bg-primary-dark, #2a2a2a);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .filter-menu-header {
+    color: var(--text-secondary-dark, #ccc);
+    border-bottom: 1px solid var(--border-color-dark, #444);
+  }
+  
+  .filter-option:hover {
+    background-color: var(--hover-bg-dark, rgba(255, 255, 255, 0.05));
+  }
+  
+  .filter-option.active {
+    background-color: var(--hover-bg-dark, rgba(255, 255, 255, 0.1));
+  }
+  
+  .filter-indicator {
+    color: var(--text-accent-dark, #4d9fff);
+  }
+  
+  .filter-icon:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}

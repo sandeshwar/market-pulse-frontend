@@ -19,12 +19,35 @@ export class MarketDataNewsProvider extends MarketDataNewsProviderInterface {
   }
 
   /**
+   * Safely converts a published date to a timestamp in seconds
+   * @param {string} publishedDate - The date string from the API
+   * @returns {number} - Timestamp in seconds
+   */
+  _safelyConvertDate(publishedDate) {
+    if (!publishedDate) {
+      return Date.now() / 1000; // Current time in seconds
+    }
+
+    try {
+      const timestamp = new Date(publishedDate).getTime();
+      if (isNaN(timestamp)) {
+        console.warn('Invalid date format:', publishedDate);
+        return Date.now() / 1000;
+      }
+      return timestamp / 1000; // Convert to seconds
+    } catch (error) {
+      console.warn('Error parsing date:', publishedDate, error);
+      return Date.now() / 1000;
+    }
+  }
+
+  /**
    * Fetches news for a specific stock symbol
    * @param {string} symbol - The stock symbol to fetch news for
    * @param {number} limit - Maximum number of news articles to return
    * @returns {Promise<Object>} - News data for the symbol
    */
-  async getStockNews(symbol, limit = 5) {
+  async getStockNews(symbol, limit = 8) {
     try {
       const response = await fetch(
         `${this.apiUrl}market-data/news/ticker/${symbol}?limit=${limit}`,
@@ -50,7 +73,7 @@ export class MarketDataNewsProvider extends MarketDataNewsProviderInterface {
           description: item.description || '',
           url: item.url,
           source: item.url, // BreakingNews expects the URL in the source field
-          updated: new Date(item.published_date).getTime() / 1000, // Convert to seconds for compatibility
+          updated: this._safelyConvertDate(item.published_date),
           imageUrl: item.image_url,
           tags: item.tags || []
         }))
@@ -94,7 +117,7 @@ export class MarketDataNewsProvider extends MarketDataNewsProviderInterface {
           description: item.description || '',
           url: item.url,
           source: item.url, // For consistency with getStockNews
-          updated: new Date(item.published_date).getTime() / 1000, // Convert to seconds
+          updated: this._safelyConvertDate(item.published_date),
           imageUrl: item.image_url,
           tags: item.tags || []
         }))
@@ -157,7 +180,7 @@ export class MarketDataNewsProvider extends MarketDataNewsProviderInterface {
           description: item.description || '',
           url: item.url,
           source: item.url, // For consistency
-          updated: new Date(item.published_date).getTime() / 1000, // Convert to seconds
+          updated: this._safelyConvertDate(item.published_date),
           imageUrl: item.image_url,
           tags: item.tags || []
         }))
@@ -215,7 +238,7 @@ export class MarketDataNewsProvider extends MarketDataNewsProviderInterface {
           description: item.description || '',
           url: item.url,
           source: item.url, // For consistency
-          updated: new Date(item.published_date).getTime() / 1000, // Convert to seconds
+          updated: this._safelyConvertDate(item.published_date),
           imageUrl: item.image_url,
           tags: item.tags || []
         }))

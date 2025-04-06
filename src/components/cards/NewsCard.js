@@ -1,35 +1,4 @@
-// We'll use a simple function to format dates instead of importing date-fns
-function formatTimeAgo(date) {
-  const now = new Date();
-  const diffInSeconds = Math.floor((now - date) / 1000);
-
-  if (diffInSeconds < 60) {
-    return 'just now';
-  }
-
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) {
-    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-  }
-
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) {
-    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-  }
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 30) {
-    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-  }
-
-  const diffInMonths = Math.floor(diffInDays / 30);
-  if (diffInMonths < 12) {
-    return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
-  }
-
-  const diffInYears = Math.floor(diffInMonths / 12);
-  return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ago`;
-}
+import { formatTimeAgo } from '../../utils/dateUtils.js';
 
 /**
  * News Card Component
@@ -96,33 +65,34 @@ export class NewsCard {
 
     const time = document.createElement('span');
     time.className = 'news-card-time';
-    // Handle both seconds and milliseconds timestamp formats
-    const timestamp = this.article.updated > 10000000000
-      ? this.article.updated // Already in milliseconds
-      : this.article.updated * 1000; // Convert seconds to milliseconds
-    time.textContent = formatTimeAgo(new Date(timestamp));
+
+    // Handle timestamp conversion more robustly
+    let timestamp;
+    if (typeof this.article.updated === 'number') {
+      // Handle both seconds and milliseconds timestamp formats
+      timestamp = this.article.updated > 10000000000
+        ? this.article.updated // Already in milliseconds
+        : this.article.updated * 1000; // Convert seconds to milliseconds
+    } else if (typeof this.article.updated === 'string') {
+      // Handle ISO date strings
+      timestamp = new Date(this.article.updated).getTime();
+    } else {
+      // Fallback to current time if updated is missing or invalid
+      timestamp = Date.now();
+      console.warn('Invalid timestamp format in article:', this.article.headline);
+    }
+
+    // Format the date with freshness indicator
+    const timeInfo = formatTimeAgo(new Date(timestamp), true);
+    time.textContent = timeInfo.text;
+    time.classList.add(timeInfo.class);
     
     meta.appendChild(source);
     meta.appendChild(document.createTextNode(' • '));
     meta.appendChild(time);
     content.appendChild(meta);
     
-    // Add tags if available
-    if (this.article.tags && this.article.tags.length > 0) {
-      const tags = document.createElement('div');
-      tags.className = 'news-card-tags';
-      
-      // Display up to 3 tags
-      const displayTags = this.article.tags.slice(0, 3);
-      displayTags.forEach(tag => {
-        const tagElement = document.createElement('span');
-        tagElement.className = 'news-card-tag';
-        tagElement.textContent = tag;
-        tags.appendChild(tagElement);
-      });
-      
-      content.appendChild(tags);
-    }
+    // Tags removed to reduce clutter
     
     // Add image if available
     if (this.article.imageUrl) {

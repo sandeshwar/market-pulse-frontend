@@ -24,6 +24,20 @@
   gap: var(--spacing-sm);
 }
 
+/* Reduce size of icons in card titles */
+.card__title svg,
+.card__title i {
+  width: 14px;
+  height: 14px;
+}
+
+/* Specifically target trending-up and star icons to make them slightly smaller */
+.card__title svg[data-feather="trending-up"],
+.card__title svg[data-feather="star"] {
+  width: 13px;
+  height: 13px;
+}
+
 .card__actions {
   display: flex;
   gap: var(--spacing-xs);

@@ -152,7 +152,7 @@ export async function createMarketIndicesCard() {
 	// Create initial card with loading state
 	const cardElement = createElementFromHTML(createCard({
 		title: 'Market Indices',
-		icon: ICONS.barChart2,
+		icon: ICONS.trendingUp,
 		content: createLoadingState()
 	}));
 	

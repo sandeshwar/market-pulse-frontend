@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { marketDataProvider } from '../../../services/providers/MarketDataAppProvider.js';
+import { ICONS } from '../../../utils/icons.js';
+import { replaceIcons } from '../../../utils/feather.js';
 import './SymbolSearch.css';
 
 /**
@@ -147,6 +149,11 @@ export function SymbolSearch({ onSelect, maxResults = 10, placeholder = "Search 
         }
     }, [selectedIndex, results.length]);
 
+    // Replace icons after component renders
+    useEffect(() => {
+        replaceIcons();
+    }, []);
+
     const handleSelectSymbol = (symbol) => {
         onSelect(symbol);
         setQuery('');
@@ -158,17 +165,20 @@ export function SymbolSearch({ onSelect, maxResults = 10, placeholder = "Search 
     // This prevents layout shifts when the dropdown appears/disappears
     return (
         <div className="symbol-search" ref={containerRef}>
-            <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                className="search-input"
-                autoFocus={autoFocus}
-                autoComplete="off" /* Prevent browser autocomplete from interfering */
-            />
+            <div className="search-input-container">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    className="search-input"
+                    autoFocus={autoFocus}
+                    autoComplete="off" /* Prevent browser autocomplete from interfering */
+                />
+                <i className="search-icon" data-feather={ICONS.search}></i>
+            </div>
 
             {loading && <div className="symbol-search-loading">Searching...</div>}
 

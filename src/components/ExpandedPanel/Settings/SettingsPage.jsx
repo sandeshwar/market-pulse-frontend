@@ -13,6 +13,10 @@ export async function createSettingsPage() {
   const settingsPage = document.createElement('div');
   settingsPage.className = 'settings-page';
 
+  // Add the indices settings page (React version) first to match home page order
+  const indicesSettingsPage = await createIndicesSettingsReact();
+  settingsPage.appendChild(indicesSettingsPage);
+
   // Create watchlist card
   const watchlistCard = document.createElement('div');
   watchlistCard.className = 'watchlist-settings';
@@ -36,10 +40,6 @@ export async function createSettingsPage() {
   setTimeout(async () => {
     await initializeWatchlistSettings(watchlistCard);
   }, 0);
-
-  // Add the indices settings page (React version)
-  const indicesSettingsPage = await createIndicesSettingsReact();
-  settingsPage.appendChild(indicesSettingsPage);
 
   return settingsPage;
 }
@@ -84,7 +84,6 @@ async function initializeWatchlistSettings(containerElement) {
     cardContent.innerHTML = `
       <div class="watchlist-content">
         <div class="watchlist-search-section">
-          <h3 class="watchlist-section-title">Add New Symbol</h3>
           <div class="symbol-search-container"></div>
         </div>
         ${symbolsList}

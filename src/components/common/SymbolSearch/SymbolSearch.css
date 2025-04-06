@@ -7,9 +7,16 @@
     z-index: 100;
 }
 
+.symbol-search .search-input-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
 .symbol-search .search-input {
     width: 100%;
-    padding: 8px 12px;
+    padding: 8px 36px 8px 12px; /* Add right padding for the icon */
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-sm, 4px);
     font-size: 14px;
@@ -34,6 +41,18 @@
 
 .symbol-search .search-input::placeholder {
     color: var(--text-tertiary, rgba(255, 255, 255, 0.4));
+}
+
+.symbol-search .search-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+    pointer-events: none;
+    z-index: 3;
 }
 
 .symbol-search .search-results {

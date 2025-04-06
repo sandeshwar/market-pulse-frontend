@@ -198,7 +198,6 @@ export function IndicesSettingsReact() {
   return (
     <div className="watchlist-content">
       <div className="watchlist-search-section">
-        <h3 className="watchlist-section-title">Add New Index</h3>
         <IndicesSearch
           onSelect={handleIndexSelect}
           maxResults={6}

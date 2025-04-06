@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { marketDataService } from '../../../services/marketDataService.js';
+import { ICONS } from '../../../utils/icons.js';
+import { replaceIcons } from '../../../utils/feather.js';
 import './IndicesSearch.css';
 
 /**
@@ -184,6 +186,11 @@ export function IndicesSearch({ onSelect, maxResults = 10, placeholder = "Search
         }
     }, [selectedIndex, results.length]);
 
+    // Replace icons after component renders
+    useEffect(() => {
+        replaceIcons();
+    }, []);
+
     const handleSelectIndex = (index) => {
         onSelect(index);
         setQuery('');
@@ -193,18 +200,21 @@ export function IndicesSearch({ onSelect, maxResults = 10, placeholder = "Search
 
     return (
         <div className="symbol-search" ref={containerRef}>
-            <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={!indicesLoaded ? "Loading indices..." : placeholder}
-                className="search-input"
-                autoFocus={autoFocus}
-                autoComplete="off" /* Prevent browser autocomplete from interfering */
-                disabled={!indicesLoaded} /* Disable input while indices are loading */
-            />
+            <div className="search-input-container">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={!indicesLoaded ? "Loading indices..." : placeholder}
+                    className="search-input"
+                    autoFocus={autoFocus}
+                    autoComplete="off" /* Prevent browser autocomplete from interfering */
+                    disabled={!indicesLoaded} /* Disable input while indices are loading */
+                />
+                <i className="search-icon" data-feather={ICONS.search}></i>
+            </div>
 
             {loading && <div className="symbol-search-loading">
                 {!indicesLoaded ? "Loading indices..." : "Searching..."}

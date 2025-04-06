@@ -67,6 +67,22 @@
   margin-bottom: var(--spacing-xs);
 }
 
+/* Smaller delete buttons for settings page cards */
+.symbol-card__header .btn--icon,
+.index-card__header .btn--icon {
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+}
+
+.symbol-card__header .btn--icon i,
+.index-card__header .btn--icon i {
+  width: 12px;
+  height: 12px;
+}
+
 .symbol-ticker, .index-ticker {
   font-size: 1rem;
   font-weight: 600;
@@ -91,6 +107,14 @@
 
 .symbol-search-container, .indices-search-container {
   margin-top: var(--spacing-sm);
+}
+
+/* Make placeholder text brighter */
+.symbol-search .search-input::placeholder,
+.input-field::placeholder,
+.input-container .input-field::placeholder {
+  color: rgba(255, 255, 255, 0.8) !important; /* Brighter than the default tertiary text */
+  opacity: 1 !important;
 }
 
 /* Empty state styling */

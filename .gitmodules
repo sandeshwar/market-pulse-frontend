@@ -1,0 +1,3 @@
+[submodule "server/rust_api/indices_extractor"]
+	path = server/rust_api/indices_extractor
+	url = https://github.com/sandeshwar/indices-extractor.git

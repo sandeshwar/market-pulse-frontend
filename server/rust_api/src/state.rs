@@ -3,6 +3,7 @@ use crate::services::symbol::SymbolService;
 use crate::services::symbol_cache::SymbolCacheService;
 use crate::services::market_data::MarketDataProvider;
 use crate::services::indices_market_data::IndicesMarketDataService;
+use crate::services::news::NewsService;
 
 /// Application state shared across handlers
 #[derive(Clone)]
@@ -11,4 +12,5 @@ pub struct AppState {
     pub symbol_cache_service: SymbolCacheService,
     pub market_data_service: Arc<dyn MarketDataProvider>,
     pub indices_data_service: Option<Arc<IndicesMarketDataService>>,
+    pub news_service: NewsService,
 }

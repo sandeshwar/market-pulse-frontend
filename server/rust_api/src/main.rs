@@ -81,6 +81,18 @@ async fn main() {
     let indices_service = Arc::new(services::indices_market_data::IndicesMarketDataService::new());
     tracing::info!("Indices market data service initialized.");
 
+    // Initialize the news service
+    let tiingo_api_key = std::env::var("TIINGO_API_KEY")
+        .expect("TIINGO_API_KEY environment variable is required");
+
+    if tiingo_api_key.trim().is_empty() {
+        panic!("TIINGO_API_KEY environment variable cannot be empty");
+    }
+
+    let redis_arc = Arc::new(redis_manager.clone());
+    let news_service = services::news::NewsService::new(tiingo_api_key, redis_arc);
+    tracing::info!("News service initialized with Tiingo provider");
+
     // Build our application with routes
     let app = Router::new()
         .route("/api/health", get(handlers::health::health_check))
@@ -98,6 +110,11 @@ async fn main() {
         .route("/api/symbols/cache/exchange", get(handlers::symbol_cache::get_symbols_by_exchange))
         .route("/api/symbols/cache/asset-type", get(handlers::symbol_cache::get_symbols_by_asset_type))
         .route("/api/symbols/cache/refresh", get(handlers::symbol_cache::refresh_cache))
+        // News endpoints
+        .route("/api/market-data/news/trending", get(handlers::news::get_trending_news))
+        .route("/api/market-data/news/ticker/:ticker", get(handlers::news::get_ticker_news))
+        .route("/api/market-data/news/personalized", get(handlers::news::get_personalized_news))
+        .route("/api/market-data/news/filtered", get(handlers::news::get_filtered_news))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -110,6 +127,7 @@ async fn main() {
             symbol_cache_service,
             market_data_service,
             indices_data_service: Some(indices_service),
+            news_service,
         });
 
     // Run the server

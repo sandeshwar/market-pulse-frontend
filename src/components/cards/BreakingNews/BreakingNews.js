@@ -9,7 +9,16 @@ const newsProvider = new MarketDataNewsProvider();
 function createNewsItem({ headline, source, updated, symbol }) {
   const time = new Date(updated * 1000).toLocaleString();
   const formatedDateTime = time.split(',')[0] + ', ' + time.split(',')[1].slice(0, 6);
-  const sourceHostname = new URL(source).hostname.replace('www.', '');
+
+  // Handle source URL safely
+  let sourceHostname = '';
+  try {
+    sourceHostname = new URL(source).hostname.replace('www.', '');
+  } catch (e) {
+    // If source is not a valid URL, use it as is
+    sourceHostname = source || 'Unknown';
+  }
+
   return `
     <div class="news-item">
       <div class="news-content">
@@ -74,7 +83,7 @@ export async function createBreakingNewsCard() {
       cardElement.querySelectorAll('.news-item').forEach(item => {
         const newsIndex = Array.from(item.parentElement.children).indexOf(item);
         const newsData = allNews[newsIndex];
-        item.addEventListener('click', () => window.open(newsData.source, '_blank'));
+        item.addEventListener('click', () => window.open(newsData.url || newsData.source, '_blank'));
       });
 
       await replaceIcons();

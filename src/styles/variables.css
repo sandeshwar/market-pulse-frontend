@@ -4,10 +4,23 @@
   --bg-secondary: var(--chrome-secondary, #2A2A2A);
   --text-primary: var(--chrome-text-primary, #F0F0F0);
   --text-secondary: var(--chrome-text-secondary, #A0A0A0);
+  --text-tertiary: var(--chrome-text-tertiary, #808080);
   --accent-positive: var(--chrome-accent-positive, #3ECF8E);
   --accent-negative: var(--chrome-accent-negative, #E57373);
   --accent-neutral: var(--chrome-accent-neutral, #7C5DFA);
   --accent-edit: var(--chrome-accent-edit, #64B5F6);
+
+  /* News-specific colors */
+  --card-bg: var(--chrome-card-bg, #2D2D2D);
+  --card-bg-dark: var(--chrome-card-bg-dark, #252525);
+  --border-color: var(--chrome-border-color, #3A3A3A);
+  --tag-bg: var(--chrome-tag-bg, #3A3A3A);
+  --tag-text: var(--chrome-tag-text, #E0E0E0);
+  --tag-bg-dark: var(--chrome-tag-bg-dark, #333333);
+  --tag-text-dark: var(--chrome-tag-text-dark, #D0D0D0);
+  --input-bg: var(--chrome-input-bg, #333333);
+  --error-color: var(--chrome-error-color, #E57373);
+  --primary-color: var(--chrome-primary-color, #7C5DFA);
   
   /* Spacing */
   --spacing-xs: 0.25rem;

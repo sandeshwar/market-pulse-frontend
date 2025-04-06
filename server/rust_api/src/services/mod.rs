@@ -1,5 +1,7 @@
 pub mod market_data;
 pub mod market_data_provider;
+pub mod news_provider;
+pub mod news;
 pub mod redis;
 pub mod symbol;
 pub mod symbol_cache;
@@ -14,3 +16,4 @@ pub use indices_market_data::IndicesMarketDataService;
 pub use symbol::SymbolService;
 pub use symbol_cache::SymbolCacheService;
 pub use redis::RedisManager;
+pub use news::NewsService;

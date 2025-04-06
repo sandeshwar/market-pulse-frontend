@@ -10,22 +10,22 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-sm); /* Reduced from spacing-lg */
 }
 
 .card .breaking-news .news-list .news-item {
   position: relative;
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm); /* Reduced from spacing-md */
   cursor: pointer;
   display: flex;
   background: var(--bg-secondary);
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--border-radius-md); /* Reduced from border-radius-lg */
   width: 100% !important;
   box-sizing: border-box !important;
 }
 
 .card .breaking-news .news-list .news-item:not(:last-child) {
-  margin-bottom: calc(var(--spacing-lg) + 10px);
+  margin-bottom: var(--spacing-sm); /* Reduced from calc(var(--spacing-lg) + 10px) */
 }
 .card .breaking-news .news-list .news-item:hover {
   background-color: var(--bg-primary);
@@ -39,49 +39,51 @@
 
 .card .breaking-news .news-list .news-item .news-content .news-title {
   font-weight: 600;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 13px; /* Reduced from 14px */
+  line-height: 1.3; /* Reduced from 1.4 */
   color: var(--text-primary);
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm); /* Reduced from spacing-md */
   display: block !important;
 }
 
 .card .breaking-news .news-list .news-item .news-content .news-meta {
   display: flex;
   flex-direction: row;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md); /* Reduced from spacing-lg */
 }
 
 .card .breaking-news .news-list .news-item .news-content .news-time,
 .card .breaking-news .news-list .news-item .news-content .news-source {
-  font-size: 12px;
+  font-size: 11px; /* Reduced from 12px */
   color: var(--text-secondary);
 }
 
 .card .breaking-news .news-list .news-item .news-content .news-symbol {
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   font-weight: 600;
   color: var(--text-accent);
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs); /* Reduced from spacing-sm */
 }
 
 .card .breaking-news .loading {
   text-align: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md); /* Reduced from spacing-lg */
   color: var(--text-secondary);
+  font-size: 12px; /* Added smaller font size */
 }
 
 .card .breaking-news .error {
   text-align: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md); /* Reduced from spacing-lg */
   color: var(--text-error);
+  font-size: 12px; /* Added smaller font size */
 }
 
 .breaking-news .news-item svg {
-  width: 12px;
-  height: 12px;
+  width: 10px; /* Reduced from 12px */
+  height: 10px; /* Reduced from 12px */
   vertical-align: middle;
-  margin-right: 4px;
+  margin-right: 3px; /* Reduced from 4px */
   position: relative;
   top: -1px;
 }

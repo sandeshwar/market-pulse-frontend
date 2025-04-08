@@ -1,7 +1,7 @@
 /**
- * Default refresh interval for market data (60 seconds)
+ * Default refresh interval for market data (15 seconds)
  */
-export const DEFAULT_REFRESH_INTERVAL = 60000; 
+export const DEFAULT_REFRESH_INTERVAL = 15000; 
 
 
 /**

@@ -40,7 +40,7 @@ fn convert_tiingo_article(article: TiingoNewsArticle) -> NewsArticle {
         description: article.description,
         url: article.url,
         source: article.source,
-        published_date: article.publishedDate,
+        published_date: article.published_date,
         tags: all_tags,
         image_url: article.image_url,
         categories,
@@ -74,11 +74,12 @@ struct TiingoNewsArticle {
     description: Option<String>,
 
     /// The datetime the news story was published in UTC
-    publishedDate: DateTime<Utc>,
+    #[serde(rename = "publishedDate")]
+    published_date: DateTime<Utc>,
 
     /// The datetime the news story was added to the database in UTC
-    #[serde(default)]
-    crawlDate: Option<DateTime<Utc>>,
+    #[serde(default, rename = "crawlDate")]
+    crawl_date: Option<DateTime<Utc>>,
 
     /// The domain the news source is from
     source: String,

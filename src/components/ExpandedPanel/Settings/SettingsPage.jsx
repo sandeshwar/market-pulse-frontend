@@ -7,6 +7,7 @@ import { ICONS } from '../../../utils/icons.js';
 import { replaceIcons } from '../../../utils/feather.js';
 import { ensureDefaultWatchlist, DEFAULT_WATCHLIST_NAME } from '../../../utils/watchlistUtils.js';
 import { createIndicesSettingsReact } from './IndicesSettingsReact.jsx';
+import { createPrivacySettings } from './PrivacySettings.js';
 
 export async function createSettingsPage() {
   // Create a wrapper element
@@ -35,10 +36,33 @@ export async function createSettingsPage() {
   }
 
   settingsPage.appendChild(watchlistCard);
+  
+  // Create privacy settings card
+  const privacyCard = document.createElement('div');
+  privacyCard.className = 'privacy-settings';
+  
+  // Add card with initial loading state
+  privacyCard.innerHTML = createCard({
+    title: 'Privacy & Data',
+    icon: ICONS.shield,
+    content: '<div class="loading"><div class="loading-spinner"></div><p>Loading privacy settings...</p></div>'
+  });
+  
+  // Add custom class to the card
+  const privacyCardElement = privacyCard.querySelector('.card');
+  if (privacyCardElement) {
+    privacyCardElement.classList.add('card--privacy');
+  }
+  
+  settingsPage.appendChild(privacyCard);
+
+  // We've removed the admin dashboard card from the Chrome extension
 
   // Initialize the content after rendering
   setTimeout(async () => {
     await initializeWatchlistSettings(watchlistCard);
+    await initializePrivacySettings(privacyCard);
+    await replaceIcons(); // Replace icons again after adding all cards
   }, 0);
 
   return settingsPage;

@@ -8,12 +8,4 @@ pub mod symbol_cache;
 pub mod tiingo_market_data;
 pub mod indices_market_data;
 
-// Re-export commonly used services
-pub use market_data::MarketDataProvider;
-pub use market_data::MarketDataProviderEnum;
-pub use tiingo_market_data::TiingoMarketDataService;
-pub use indices_market_data::IndicesMarketDataService;
-pub use symbol::SymbolService;
-pub use symbol_cache::SymbolCacheService;
-pub use redis::RedisManager;
-pub use news::NewsService;
+// Module declarations only - no re-exports to avoid unused imports

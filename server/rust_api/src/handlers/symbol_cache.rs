@@ -5,7 +5,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use crate::state::AppState;
-use crate::models::error::ApiError;
+// use crate::models::error::ApiError;
 
 /// Query parameters for symbol search
 #[derive(Debug, Deserialize)]

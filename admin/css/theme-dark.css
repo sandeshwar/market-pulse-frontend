@@ -1,0 +1,192 @@
+/* Semi-Dark Theme for Admin UI */
+
+:root.theme-dark {
+  /* Base colors */
+  --bg-primary: #1e2130;
+  --bg-secondary: #262b3e;
+  --text-primary: #e4e6f0;
+  --text-secondary: #a9adc1;
+  --border-color: #3a4055;
+  
+  /* Component colors */
+  --card-bg: #2d3348;
+  --header-bg: #262b3e;
+  --table-header-bg: #2d3348;
+  --table-row-hover: #323a52;
+  --table-border: #3a4055;
+  
+  /* Accent colors - keeping these similar to maintain brand identity */
+  --accent-color: #4a6cf7;
+  --accent-hover: #3a5ce5;
+  --error-color: #e57373;
+  --success-color: #4caf50;
+  
+  /* Input elements */
+  --input-bg: #323a52;
+  --input-border: #3a4055;
+  --input-text: #e4e6f0;
+  --input-placeholder: #8c91a5;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Apply dark theme styles */
+.theme-dark .admin-container {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.theme-dark .admin-header {
+  background-color: var(--header-bg);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.theme-dark .admin-header h1 {
+  color: var(--text-primary);
+}
+
+.theme-dark .admin-nav a {
+  color: var(--text-secondary);
+}
+
+.theme-dark .admin-nav a:hover,
+.theme-dark .admin-nav li.active a {
+  color: var(--accent-color);
+}
+
+.theme-dark .dashboard-card,
+.theme-dark .settings-container,
+.theme-dark .error-state {
+  background-color: var(--card-bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-dark .dashboard-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.theme-dark .dashboard-header,
+.theme-dark .settings-header,
+.theme-dark .settings-actions {
+  border-color: var(--border-color);
+}
+
+.theme-dark .dashboard-header h1,
+.theme-dark .settings-header h2,
+.theme-dark .settings-section h3 {
+  color: var(--text-primary);
+}
+
+.theme-dark .summary-card h3 {
+  color: var(--text-secondary);
+}
+
+.theme-dark .card-value {
+  color: var(--text-primary);
+}
+
+/* Table styles */
+.theme-dark .endpoints-table th {
+  background-color: var(--table-header-bg);
+  color: var(--text-primary);
+}
+
+.theme-dark .endpoints-table td {
+  border-color: var(--table-border);
+  color: var(--text-secondary);
+}
+
+.theme-dark .endpoints-table tbody tr:hover {
+  background-color: var(--table-row-hover);
+}
+
+/* Form elements */
+.theme-dark .settings-label {
+  color: var(--text-primary);
+}
+
+.theme-dark .settings-help {
+  color: var(--text-secondary);
+}
+
+.theme-dark .settings-select,
+.theme-dark .refresh-rate-select {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
+}
+
+.theme-dark .btn-secondary {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--input-border);
+}
+
+.theme-dark .btn-secondary:hover {
+  background-color: var(--table-row-hover);
+}
+
+/* Toggle switch */
+.theme-dark .toggle-button {
+  background-color: #555;
+}
+
+.theme-dark .toggle-input:checked + .toggle-label .toggle-button {
+  background-color: var(--accent-color);
+}
+
+/* Loading screen */
+.theme-dark .loading-screen {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.theme-dark .loading-spinner {
+  border-color: var(--border-color);
+  border-top-color: var(--accent-color);
+}
+
+/* Apply theme to loading screen immediately if theme is saved */
+.loading-screen.theme-dark-loading {
+  background-color: #1e2130;
+  color: #e4e6f0;
+}
+
+.loading-screen.theme-dark-loading .loading-spinner {
+  border-color: #3a4055;
+  border-top-color: #4a6cf7;
+}
+
+/* Error details */
+.theme-dark .error-details {
+  background-color: var(--input-bg);
+  color: var(--error-color);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-dark .theme-toggle {
+  color: var(--text-secondary);
+}
+
+.theme-dark .theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

@@ -5,13 +5,15 @@ mod utils;
 mod state;
 mod config;
 
-use axum::{routing::get, Router, http::Method};
+use axum::{routing::get, Router, http::Method, middleware, body::Body, http::Request};
+use axum::middleware::Next;
 use tower_http::{cors::{CorsLayer, Any}, trace::TraceLayer};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use dotenv::dotenv;
 use crate::state::AppState;
+use crate::utils::analytics::{ApiAnalytics, track_analytics};
 
 #[tokio::main]
 async fn main() {
@@ -93,6 +95,10 @@ async fn main() {
     let news_service = services::news::NewsService::new(tiingo_api_key, redis_arc);
     tracing::info!("News service initialized with Tiingo provider");
 
+    // Initialize analytics service
+    let analytics_service = Arc::new(ApiAnalytics::new());
+    let analytics_service_clone = analytics_service.clone();
+
     // Build our application with routes
     let app = Router::new()
         .route("/api/health", get(handlers::health::health_check))
@@ -115,6 +121,9 @@ async fn main() {
         .route("/api/market-data/news/ticker/:ticker", get(handlers::news::get_ticker_news))
         .route("/api/market-data/news/personalized", get(handlers::news::get_personalized_news))
         .route("/api/market-data/news/filtered", get(handlers::news::get_filtered_news))
+        // Analytics endpoints
+        .route("/api/analytics", get(handlers::analytics::get_analytics))
+        .route("/api/analytics/config", axum::routing::post(handlers::analytics::update_analytics_config))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -122,16 +131,34 @@ async fn main() {
                 .allow_headers(Any)
         )
         .layer(TraceLayer::new_for_http())
+        // Add analytics middleware to track all requests (with conditional tracking)
+        .layer(middleware::from_fn(move |req: Request<Body>, next: Next| {
+            let analytics_service = analytics_service_clone.clone();
+            async move {
+                // Get the path for checking if it's an analytics endpoint
+                let path = req.uri().path();
+                let is_analytics_endpoint = path.starts_with("/api/analytics");
+                
+                // Only track analytics if enabled and not an analytics endpoint itself
+                if crate::handlers::analytics::is_analytics_enabled() && !is_analytics_endpoint {
+                    track_analytics(&analytics_service, req, next).await
+                } else {
+                    // Skip analytics tracking
+                    next.run(req).await
+                }
+            }
+        }))
         .with_state(AppState {
             symbol_service,
             symbol_cache_service,
             market_data_service,
             indices_data_service: Some(indices_service),
             news_service,
+            analytics: Some(analytics_service),
         });
 
     // Run the server
-    let port = std::env::var("API_PORT").unwrap_or_else(|_| "3100".to_string()).parse::<u16>().unwrap_or(3100);
+    let port = std::env::var("API_PORT").unwrap_or_else(|_| "3001".to_string()).parse::<u16>().unwrap_or(3001);
     let host = std::env::var("API_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
 
     let addr_str = format!("{}:{}", host, port);

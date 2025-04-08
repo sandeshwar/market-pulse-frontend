@@ -2,7 +2,7 @@ use crate::models::symbol::{SymbolPrice, BatchPriceResponse};
 use crate::models::error::ApiError;
 use crate::services::redis::RedisManager;
 use crate::services::market_data::MarketDataProvider;
-use std::sync::Arc;
+// use std::sync::Arc;
 use std::collections::HashMap;
 use chrono::Utc;
 use async_trait::async_trait;

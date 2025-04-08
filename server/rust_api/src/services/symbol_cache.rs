@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use redis::AsyncCommands;
 use crate::models::error::ApiError;
 use crate::services::redis::RedisManager;
-use tracing::{info, error, debug};
+use tracing::{info, debug};
 
 /// Represents a record in the Tiingo symbols CSV file
 #[derive(Debug, Deserialize, Serialize)]

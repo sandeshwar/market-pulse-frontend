@@ -10,7 +10,7 @@ use chrono::{Utc, Duration};
 use std::env;
 use std::time::Duration as StdDuration;
 use async_trait::async_trait;
-use downcast_rs::Downcast;
+// use downcast_rs::Downcast;
 
 /// Key prefix for symbol price data in Redis
 const SYMBOL_PRICE_PREFIX: &str = "market_data:symbol:";

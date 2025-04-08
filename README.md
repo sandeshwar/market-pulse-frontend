@@ -18,6 +18,15 @@ src/
 ├── utils/           # Utility functions and helpers
 ├── vendor/          # Third-party dependencies
 └── main.js          # Application entry point
+
+server/
+├── rust_api/        # High-performance Rust API
+└── data/            # Data files
+
+admin/
+├── css/             # Admin dashboard styles
+├── js/              # Admin dashboard scripts
+└── index.html       # Admin dashboard entry point
 ```
 
 ## Technical Details
@@ -43,6 +52,23 @@ This extension is built with:
 - HTML5
 - CSS3
 - Chrome Extension APIs
+- Rust API backend
+
+## Admin Dashboard
+
+The project includes a standalone admin dashboard for monitoring API usage and performance:
+
+### Features
+- Real-time API request monitoring
+- Response time tracking
+- Error rate visualization
+- Endpoint usage statistics
+
+### Usage
+1. Start the Market Pulse API server
+2. Navigate to the admin directory: `cd admin`
+3. Start the dashboard: `npm start`
+4. Open your browser to http://localhost:8080
 
 ## Important Notes
 

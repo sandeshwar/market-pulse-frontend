@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use crate::models::error::ApiError;
 use crate::models::news::{NewsResponse, NewsRequest};
 use crate::state::AppState;

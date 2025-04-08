@@ -5,7 +5,7 @@ export class MarketDataNewsProvider extends MarketDataNewsProviderInterface {
   constructor() {
     super();
     // Extract the base URL from config.API_URL
-    let baseUrl = config.API_URL || 'http://localhost:3100/api/';
+    let baseUrl = config.API_URL || 'http://localhost:3001/api/';
 
     // Make sure the URL doesn't end with 'market-data/'
     baseUrl = baseUrl.replace(/market-data\/$/, '');

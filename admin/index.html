@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Pulse Admin</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/settings.css">
+  <link rel="stylesheet" href="css/theme-dark.css">
+  <!-- Chart.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Feather Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+</head>
+<body>
+  <div id="admin-app" class="admin-container">
+    <!-- Content will be dynamically loaded here -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="loading-spinner"></div>
+      <p>Loading dashboard...</p>
+    </div>
+  </div>
+
+  <!-- Theme Scripts -->
+  <script src="js/theme-switcher.js"></script>
+  <script src="js/chart-theme.js"></script>
+  
+  <script type="module">
+    import AdminPage from './js/admin.js';
+
+    // Initialize the admin application
+    async function initializeAdminApp() {
+      try {
+        const container = document.getElementById('admin-app');
+        const adminPage = new AdminPage(container);
+        await adminPage.init();
+
+        // Initialize Feather icons
+        if (window.feather) {
+          feather.replace();
+        }
+
+        // Hide loading screen with fade-out animation
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.classList.add('fade-out');
+          setTimeout(() => {
+            loadingScreen.remove();
+          }, 300);
+        }
+
+        // Store the admin page instance for cleanup
+        window.adminPageInstance = adminPage;
+      } catch (error) {
+        console.error('Failed to initialize admin application:', error);
+
+        // Create error message
+        const container = document.getElementById('admin-app');
+        container.innerHTML = `
+          <div class="error-state">
+            <i data-feather="alert-triangle"></i>
+            <p>Failed to load admin dashboard. Please try again later.</p>
+            <p class="error-details">${error.message}</p>
+          </div>
+        `;
+
+        // Replace icons even in error state
+        if (window.feather) {
+          feather.replace();
+        }
+
+        // Hide loading screen even on error
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.remove();
+        }
+      }
+    }
+
+    // Initialize on DOM content loaded
+    document.addEventListener('DOMContentLoaded', initializeAdminApp);
+
+    // Cleanup on page unload
+    window.addEventListener('unload', () => {
+      if (window.adminPageInstance?.destroy) {
+        window.adminPageInstance.destroy();
+      }
+    });
+  </script>
+</body>
+</html>

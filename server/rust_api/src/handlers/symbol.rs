@@ -3,7 +3,7 @@ use axum::{
     Json,
 };
 use serde::Deserialize;
-use crate::models::symbol::{SymbolSearchResponse, Symbol};
+use crate::models::symbol::SymbolSearchResponse;
 use crate::models::error::{ErrorResponse, ApiError};
 use crate::AppState;
 
@@ -51,7 +51,7 @@ pub async fn search_symbols(
     let limit = params.limit.min(100); // Cap at 100 results
 
     match state.symbol_service.search_symbols(&query, limit).await {
-        Ok(mut results) => {
+        Ok(results) => {
             // Add a note to the results if they came from Tiingo's official list
             if !results.is_empty() {
                 tracing::info!("Found {} symbols matching '{}' from Tiingo's supported list", results.len(), query);

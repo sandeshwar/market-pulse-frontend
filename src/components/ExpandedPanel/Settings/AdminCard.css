@@ -1,0 +1,42 @@
+/* Admin Card Styles */
+
+.admin-settings {
+  margin-top: var(--spacing-lg);
+}
+
+.card--admin {
+  border-left: 3px solid var(--accent-neutral);
+}
+
+.admin-card-content {
+  padding: var(--spacing-md) 0;
+}
+
+.admin-card-content p {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-secondary);
+}
+
+.admin-card-content .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--accent-neutral);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.admin-card-content .btn:hover {
+  background-color: var(--accent-neutral-hover);
+}
+
+.admin-card-content .btn i {
+  width: 16px;
+  height: 16px;
+}

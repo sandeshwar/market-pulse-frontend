@@ -30,23 +30,27 @@ impl RedisManager {
         tracing::debug!("Lock acquired in {:?}", start.elapsed());
 
         // Check if we have an existing connection
-        if let Some(conn) = conn_guard.take() {
+        if let Some(ref mut conn) = *conn_guard {
             // Check if the connection is still usable
             if self.is_connection_healthy(conn).await {
                 tracing::debug!("Reusing existing Redis connection");
+                // Clone the connection for the caller
                 let new_conn = self.client.get_async_connection().await?;
-                *conn_guard = Some(new_conn);
-                return Ok(self.client.get_async_connection().await?);
+                return Ok(new_conn);
             }
             tracing::debug!("Existing connection was unhealthy, creating new one");
+            // Remove the unhealthy connection
+            *conn_guard = None;
         }
 
         // Create a new connection
         match self.client.get_async_connection().await {
             Ok(conn) => {
                 tracing::info!("New Redis connection established in {:?}", start.elapsed());
-                *conn_guard = Some(conn);
-                Ok(self.client.get_async_connection().await?)
+                // Store a copy of the connection
+                let conn_clone = self.client.get_async_connection().await?;
+                *conn_guard = Some(conn_clone);
+                Ok(conn)
             },
             Err(e) => {
                 tracing::error!("Failed to establish Redis connection: {}", e);
@@ -56,11 +60,14 @@ impl RedisManager {
     }
 
     /// Checks if a Redis connection is still healthy
-    async fn is_connection_healthy(&self, mut conn: redis::aio::Connection) -> bool {
+    async fn is_connection_healthy(&self, conn: &mut redis::aio::Connection) -> bool {
         // Simple PING check to verify connection health
-        match redis::cmd("PING").query_async::<_, String>(&mut conn).await {
+        match redis::cmd("PING").query_async::<_, String>(conn).await {
             Ok(pong) => pong == "PONG",
-            Err(_) => false
+            Err(e) => {
+                tracing::warn!("Redis connection health check failed: {}", e);
+                false
+            }
         }
     }
     

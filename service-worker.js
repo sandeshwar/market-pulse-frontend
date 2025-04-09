@@ -1,30 +1,28 @@
-// Service worker for Market Pulse extension
-const CACHE_NAME = 'market-pulse-v2';
+// Service worker for Market Pulse extension - No caching
 
-// Install event - cache static assets
+// Install event - just skip waiting
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing');
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up any existing caches
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activated');
+  // Clear all caches to ensure no stale data
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log('Service Worker: Clearing Old Cache');
-            return caches.delete(cache);
-          }
+        cacheNames.map((cacheName) => {
+          console.log('Service Worker: Clearing Cache', cacheName);
+          return caches.delete(cacheName);
         })
       );
     })
   );
 });
 
-// Fetch event - handle CORS requests
+// Fetch event - handle requests with no caching
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
@@ -49,12 +47,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle all other requests
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
-  );
+  // For all requests, go straight to network without any caching
+  event.respondWith(fetch(event.request));
 });
 
 chrome.sidePanel

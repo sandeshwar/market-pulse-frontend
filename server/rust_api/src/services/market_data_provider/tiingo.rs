@@ -5,8 +5,10 @@ use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use reqwest::Client;
 use std::time::Duration;
+use futures_util::future;
 
 /// Tiingo API client for market data
+#[derive(Clone)]
 pub struct TiingoClient {
     client: Client,
     api_key: String,
@@ -93,52 +95,66 @@ impl TiingoClient {
             return Ok(Vec::new());
         }
 
-        let mut results = Vec::new();
-
-        // Process each symbol individually
-        for symbol in symbols {
-            // Clean the symbol (Tiingo doesn't use exchange suffixes)
-            let clean_symbol = self.clean_symbol(symbol);
+        // Create a vector of futures for parallel processing
+        let futures = symbols.iter().map(|symbol| {
+            let symbol = symbol.clone();
+            let client_clone = self.clone(); // Clone the client for each future
             
-            // Try to get real-time data first (IEX)
-            match self.fetch_iex_data(&clean_symbol).await {
-                Ok(Some(price)) => {
-                    results.push(price);
-                },
-                Ok(None) => {
-                    // Fall back to EOD data if IEX data is not available
-                    match self.fetch_eod_data(&clean_symbol).await {
-                        Ok(Some(price)) => {
-                            results.push(price);
-                        },
-                        Ok(None) => {
-                            tracing::warn!("No data available for symbol: {}", symbol);
-                        },
-                        Err(e) => {
-                            tracing::error!("Error fetching EOD data for {}: {}", symbol, e);
+            async move {
+                // Clean the symbol (Tiingo doesn't use exchange suffixes)
+                let clean_symbol = client_clone.clean_symbol(&symbol);
+                
+                // Try to get real-time data first (IEX)
+                match client_clone.fetch_iex_data(&clean_symbol).await {
+                    Ok(Some(price)) => {
+                        Ok::<Option<SymbolPrice>, ApiError>(Some(price))
+                    },
+                    Ok(None) => {
+                        // Fall back to EOD data if IEX data is not available
+                        match client_clone.fetch_eod_data(&clean_symbol).await {
+                            Ok(Some(price)) => Ok::<Option<SymbolPrice>, ApiError>(Some(price)),
+                            Ok(None) => {
+                                tracing::warn!("No data available for symbol: {}", symbol);
+                                Ok::<Option<SymbolPrice>, ApiError>(None)
+                            },
+                            Err(e) => {
+                                tracing::error!("Error fetching EOD data for {}: {}", symbol, e);
+                                Ok::<Option<SymbolPrice>, ApiError>(None)
+                            }
                         }
-                    }
-                },
-                Err(e) => {
-                    tracing::error!("Error fetching IEX data for {}: {}", symbol, e);
-                    
-                    // Try EOD data as fallback
-                    match self.fetch_eod_data(&clean_symbol).await {
-                        Ok(Some(price)) => {
-                            results.push(price);
-                        },
-                        Ok(None) => {
-                            tracing::warn!("No data available for symbol: {}", symbol);
-                        },
-                        Err(e2) => {
-                            tracing::error!("Error fetching EOD data for {}: {}", symbol, e2);
+                    },
+                    Err(e) => {
+                        tracing::error!("Error fetching IEX data for {}: {}", symbol, e);
+                        
+                        // Try EOD data as fallback
+                        match client_clone.fetch_eod_data(&clean_symbol).await {
+                            Ok(Some(price)) => Ok::<Option<SymbolPrice>, ApiError>(Some(price)),
+                            Ok(None) => {
+                                tracing::warn!("No data available for symbol: {}", symbol);
+                                Ok::<Option<SymbolPrice>, ApiError>(None)
+                            },
+                            Err(e2) => {
+                                tracing::error!("Error fetching EOD data for {}: {}", symbol, e2);
+                                Ok::<Option<SymbolPrice>, ApiError>(None)
+                            }
                         }
                     }
                 }
             }
+        }).collect::<Vec<_>>();
+        
+        // Execute all futures in parallel and collect the results
+        let results = future::join_all(futures).await;
+        
+        // Filter out None values and errors
+        let mut valid_results = Vec::new();
+        for result in results {
+            if let Ok(Some(price)) = result {
+                valid_results.push(price);
+            }
         }
 
-        Ok(results)
+        Ok(valid_results)
     }
 
     /// Fetches real-time IEX data for a symbol

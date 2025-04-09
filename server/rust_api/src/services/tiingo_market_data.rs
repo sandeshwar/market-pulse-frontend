@@ -10,6 +10,8 @@ use chrono::{Utc, Duration};
 use std::env;
 use std::time::Duration as StdDuration;
 use async_trait::async_trait;
+use futures_util::future;
+use futures_util::stream::{self as stream, StreamExt};
 // use downcast_rs::Downcast;
 
 /// Key prefix for symbol price data in Redis
@@ -122,27 +124,51 @@ impl MarketDataProvider for TiingoMarketDataService {
             });
         }
 
-        // Track accessed symbols
-        self.track_accessed_symbols(symbols).await?;
+        // Track accessed symbols in the background
+        let track_symbols = symbols.to_vec();
+        let track_service = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = track_service.track_accessed_symbols(&track_symbols).await {
+                tracing::error!("Failed to track accessed symbols: {}", e);
+            }
+        });
 
-        // Check cache for each symbol
+        // Check cache for each symbol in parallel
         let mut cached_prices = HashMap::new();
         let mut symbols_to_fetch = Vec::new();
-
-        for symbol in symbols {
+        
+        // Create futures for all Redis get operations
+        let redis_futures = symbols.iter().map(|symbol| {
+            let symbol = symbol.clone();
+            let redis = self.redis.clone();
             let key = format!("{}{}", SYMBOL_PRICE_PREFIX, symbol);
-            match self.redis.get::<SymbolPrice>(&key).await {
-                Ok(Some(price)) => {
-                    cached_prices.insert(symbol.clone(), price);
+            
+            async move {
+                match redis.get::<SymbolPrice>(&key).await {
+                    Ok(Some(price)) => (symbol, Some(price)),
+                    _ => (symbol, None),
                 }
-                _ => {
-                    symbols_to_fetch.push(symbol.clone());
+            }
+        }).collect::<Vec<_>>();
+        
+        // Execute all Redis operations in parallel
+        let redis_results = future::join_all(redis_futures).await;
+        
+        // Process results
+        for (symbol, price_opt) in redis_results {
+            match price_opt {
+                Some(price) => {
+                    cached_prices.insert(symbol, price);
+                },
+                None => {
+                    symbols_to_fetch.push(symbol);
                 }
             }
         }
 
         // Fetch missing symbols from the provider
         if !symbols_to_fetch.is_empty() {
+            tracing::debug!("Fetching {} symbols from provider", symbols_to_fetch.len());
             let fresh_prices = self.provider.fetch_market_data(&symbols_to_fetch).await?;
 
             // Check if we got any results back
@@ -157,14 +183,27 @@ impl MarketDataProvider for TiingoMarketDataService {
                 }
             }
 
-            // Cache the fresh data
-            for price in &fresh_prices {
+            // Cache the fresh data in parallel
+            let cache_futures = fresh_prices.iter().map(|price| {
+                let price = price.clone();
+                let redis = self.redis.clone();
+                let cache_duration = self.cache_duration;
                 let key = format!("{}{}", SYMBOL_PRICE_PREFIX, price.symbol);
-                if let Err(e) = self.redis.set(&key, price, Some(self.cache_duration as usize)).await {
-                    tracing::error!("Failed to cache symbol price for {}: {}", price.symbol, e);
+                
+                async move {
+                    if let Err(e) = redis.set(&key, &price, Some(cache_duration as usize)).await {
+                        tracing::error!("Failed to cache symbol price for {}: {}", price.symbol, e);
+                    }
+                    price
                 }
-
-                cached_prices.insert(price.symbol.clone(), price.clone());
+            }).collect::<Vec<_>>();
+            
+            // Execute all cache operations in parallel
+            let cached_prices_results = future::join_all(cache_futures).await;
+            
+            // Add fresh prices to the result map
+            for price in cached_prices_results {
+                cached_prices.insert(price.symbol.clone(), price);
             }
         }
 
@@ -287,24 +326,55 @@ impl MarketDataProvider for TiingoMarketDataService {
 
         tracing::info!("Updating {} symbols", symbols.len());
 
-        // Update symbols in batches of 20
-        for chunk in symbols.chunks(20) {
-            match self.provider.fetch_market_data(chunk).await {
-                Ok(prices) => {
-                    // Cache the fresh data
-                    for price in &prices {
-                        let key = format!("{}{}", SYMBOL_PRICE_PREFIX, price.symbol);
-                        if let Err(e) = self.redis.set(&key, price, Some(self.cache_duration as usize)).await {
-                            tracing::error!("Failed to cache symbol price for {}: {}", price.symbol, e);
+        // Process symbols in parallel batches of 20 for better throughput control
+        let batch_size = 20;
+        let mut futures = Vec::new();
+
+        for chunk in symbols.chunks(batch_size) {
+            let chunk_symbols = chunk.to_vec();
+            let provider = self.provider.clone();
+            let redis = self.redis.clone();
+            let cache_duration = self.cache_duration;
+
+            // Create a future for each batch
+            let future = async move {
+                match provider.fetch_market_data(&chunk_symbols).await {
+                    Ok(prices) => {
+                        // Cache the fresh data
+                        for price in &prices {
+                            let key = format!("{}{}", SYMBOL_PRICE_PREFIX, price.symbol);
+                            if let Err(e) = redis.set(&key, price, Some(cache_duration as usize)).await {
+                                tracing::error!("Failed to cache symbol price for {}: {}", price.symbol, e);
+                            }
                         }
+                        Ok(prices.len())
+                    },
+                    Err(e) => {
+                        tracing::error!("Failed to update symbol data batch: {}", e);
+                        Err(e)
                     }
-                },
-                Err(e) => {
-                    tracing::error!("Failed to update symbol data: {}", e);
-                    continue;
                 }
+            };
+
+            futures.push(future);
+        }
+
+        // Execute all batch futures with some concurrency control
+        // Just use join_all since we already have a Vec of futures
+        let results = future::join_all(futures).await;
+
+        // Log results
+        let mut updated_count = 0;
+        let mut error_count = 0;
+
+        for result in results {
+            match result {
+                Ok(count) => updated_count += count,
+                Err(_) => error_count += 1,
             }
         }
+
+        tracing::info!("Updated {} symbols with {} batch errors", updated_count, error_count);
 
         // Remove stale symbols
         if let Err(e) = self.remove_stale_symbols().await {

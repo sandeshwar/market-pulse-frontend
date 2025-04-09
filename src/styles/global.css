@@ -10,10 +10,7 @@
 @import '../components/ExpandedPanel/TabNavigation/TabNavigation.css';
 @import '../components/ExpandedPanel/ExpandedPanel.css';
 @import '../components/cards/BreakingNews/BreakingNews.css';
-@import '../components/ExpandedPanel/Settings/settings.css';
 @import '../components/ExpandedPanel/Settings/SettingsPage.css';
-/* @import '../components/ExpandedPanel/Settings/ListManagementSettings.css'; */
-@import '../components/ExpandedPanel/Settings/AdminCard.css';
 @import '../components/common/Branding/Branding.css';
 
 body {

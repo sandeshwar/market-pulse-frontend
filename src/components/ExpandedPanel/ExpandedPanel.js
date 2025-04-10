@@ -14,12 +14,7 @@ import { createBranding } from '../common/Branding/Branding.js';
 export async function createExpandedPanel() {
   // Create components that need cleanup
   const marketIndicesCard = await createMarketIndicesCard();
-
-  // Using the vanilla JS version for now
-  // TODO: Migrate to React version when ready
-  // const watchlistCard = await createWatchlistCard({ title: 'My Watchlist' });
   const watchlistCard = await createWatchlistCardReact({ title: 'My Watchlist' });
-
   const newsCard = await createBreakingNewsCard();
   const settingsPage = await createSettingsPage();
   

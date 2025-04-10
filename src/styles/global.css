@@ -1,5 +1,5 @@
 @import './variables.css';
-@import './news.css';
+/* @import './news.css'; */
 @import '../components/common/Button/Button.css';
 @import '../components/common/Input/Input.css';
 @import '../components/common/Select/Select.css';

@@ -94,7 +94,7 @@ export async function createBreakingNewsCard() {
   // Create refresh button
   const refreshButton = document.createElement('button');
   refreshButton.className = 'news-refresh-button';
-  refreshButton.innerHTML = `<i data-feather="${ICONS.refresh}"></i>`;
+  refreshButton.innerHTML = `<i data-feather="${ICONS.refreshCw}"></i>`;
   refreshButton.title = 'Refresh news';
   refreshButton.addEventListener('click', () => {
     refreshButton.classList.add('rotating');

@@ -25,7 +25,7 @@ export const ICONS = {
   plus: 'plus',
   alertTriangle: 'alert-triangle',
   loader: 'loader',
-  refreshCw: 'rotate-cw',
+  refreshCw: 'refresh-cw',
   alertCircle: 'alert-circle',
   sortAsc: 'sliders', 
   sortDesc: 'sliders', // Use the same icon for both directions

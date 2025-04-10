@@ -78,24 +78,3 @@ export function formatTimeAgo(date, includeClass = false) {
     : formattedDate;
 }
 
-/**
- * Format a date with time
- * @param {Date} date - The date to format
- * @returns {string} - Formatted date and time string
- */
-export function formatDateTime(date) {
-  // Validate the date object
-  if (!(date instanceof Date) || isNaN(date.getTime())) {
-    console.warn('Invalid date provided to formatDateTime:', date);
-    return 'unknown date';
-  }
-  
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'numeric',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }).format(date);
-}

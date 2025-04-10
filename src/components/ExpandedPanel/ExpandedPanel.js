@@ -9,17 +9,14 @@ import { replaceIcons } from '../../utils/feather.js';
 
 
 // Import the branding component
-import { createBranding } from '../common/Branding/Branding.js';
+import Branding from '../common/Branding/Branding.jsx';
+import { createRoot } from 'react-dom/client';
+import React from 'react';
 
 export async function createExpandedPanel() {
   // Create components that need cleanup
   const marketIndicesCard = await createMarketIndicesCard();
-
-  // Using the vanilla JS version for now
-  // TODO: Migrate to React version when ready
-  // const watchlistCard = await createWatchlistCard({ title: 'My Watchlist' });
   const watchlistCard = await createWatchlistCardReact({ title: 'My Watchlist' });
-
   const newsCard = await createBreakingNewsCard();
   const settingsPage = await createSettingsPage();
   
@@ -99,8 +96,17 @@ export async function createExpandedPanel() {
   panel.appendChild(panelContent);
 
   // Create and add branding element
-  const branding = createBranding();
-  panel.appendChild(branding);
+  const brandingContainer = document.createElement('div');
+  panel.appendChild(brandingContainer);
+  
+  // Render React Branding component
+  const brandingRoot = createRoot(brandingContainer);
+  brandingRoot.render(React.createElement(Branding));
+  
+  // Add cleanup for React root
+  cleanupFunctions.add(() => {
+    brandingRoot.unmount();
+  });
 
   // Initialize icons after all DOM elements are added
   await replaceIcons();

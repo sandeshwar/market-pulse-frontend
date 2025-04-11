@@ -1,4 +1,4 @@
-import { createButton } from '../Button/Button.js';
+import { createButtonReact } from '../Button/Button.js';
 import { ICONS } from '../../../utils/icons.js';
 
 export function createCard({ 
@@ -15,26 +15,35 @@ export function createCard({
     }
   ];
 
-  return `
-    <div class="card">
-      <div class="card__header">
-        <div class="card__title">
-          ${icon ? `<i data-feather="${icon}"></i>` : ''}
-          ${title}
-        </div>
-        ${showActions ? `
-          <div class="card__actions">
-            ${actions.map(action => createButton({
-              ...action,
-              variant: 'icon',
-              'data-action': action.onClick
-            })).join('')}
-          </div>
-        ` : ''}
+  // Create the card element
+  const cardElement = document.createElement('div');
+  cardElement.className = 'card';
+  
+  // Create the card structure
+  cardElement.innerHTML = `
+    <div class="card__header">
+      <div class="card__title">
+        ${icon ? `<i data-feather="${icon}"></i>` : ''}
+        ${title}
       </div>
-      <div class="card__content">
-        ${content}
-      </div>
+      ${showActions ? '<div class="card__actions"></div>' : ''}
+    </div>
+    <div class="card__content">
+      ${content}
     </div>
   `;
+  
+  // Add action buttons if needed
+  if (showActions) {
+    const actionsContainer = cardElement.querySelector('.card__actions');
+    actions.forEach(action => {
+      const buttonElement = createButtonReact({
+        ...action,
+        variant: 'icon'
+      });
+      actionsContainer.appendChild(buttonElement);
+    });
+  }
+  
+  return cardElement.outerHTML;
 }

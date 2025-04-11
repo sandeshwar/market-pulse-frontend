@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { marketDataProvider } from '../../../services/providers/MarketDataAppProvider.js';
 import { ICONS } from '../../../utils/icons.js';
 import { replaceIcons } from '../../../utils/feather.js';
+import { FeatherIcon } from '../FeatherIcon/FeatherIcon.jsx';
 import './SymbolSearch.css';
 
 /**
@@ -11,8 +12,17 @@ import './SymbolSearch.css';
  * @param {number} props.maxResults - Maximum number of results to show (default: 10)
  * @param {string} props.placeholder - Placeholder text for the input
  * @param {boolean} props.autoFocus - Whether to autofocus the input
+ * @param {string} props.title - Optional title for the component header (default: "Stock Search")
+ * @param {boolean} props.showHeader - Whether to show the header (default: true)
  */
-export function SymbolSearch({ onSelect, maxResults = 10, placeholder = "Search stocks (e.g. AAPL, Apple)", autoFocus = false }) {
+export function SymbolSearch({ 
+  onSelect, 
+  maxResults = 10, 
+  placeholder = "Search stocks (e.g. AAPL, Apple)", 
+  autoFocus = false,
+  title = "Stock Search",
+  showHeader = true
+}) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -164,42 +174,53 @@ export function SymbolSearch({ onSelect, maxResults = 10, placeholder = "Search 
     // Use a portal to render the dropdown outside the normal DOM flow
     // This prevents layout shifts when the dropdown appears/disappears
     return (
-        <div className="symbol-search" ref={containerRef}>
-            <div className="search-input-container">
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={placeholder}
-                    className="search-input"
-                    autoFocus={autoFocus}
-                    autoComplete="off" /* Prevent browser autocomplete from interfering */
-                />
-                <i className="search-icon" data-feather={ICONS.search}></i>
-            </div>
-
-            {loading && <div className="symbol-search-loading">Searching...</div>}
-
-            {/* Render the dropdown only when there are results */}
-            {results.length > 0 && (
-                <ul ref={resultsRef} className="search-results">
-                    {results.map((result, index) => (
-                        <li
-                            key={result.symbol}
-                            className={`search-result-item ${index === selectedIndex ? 'selected' : ''}`}
-                            onClick={() => handleSelectSymbol(result)}
-                            onMouseEnter={() => setSelectedIndex(index)}
-                            title={`${result.symbol}${result.name !== result.symbol ? ` - ${result.name}` : ''} - ${result.exchange || 'Unknown'} - ${result.assetType || 'Unknown'}`}
-                        >
-                            <span className="symbol">{result.symbol}</span>
-                            <span className="name">{result.name === result.symbol ? '' : result.name}</span>
-                            <span className="exchange">{result.exchange || 'Unknown'}{result.assetType ? ` (${result.assetType})` : ''}</span>
-                        </li>
-                    ))}
-                </ul>
+        <div className="symbol-search-container">
+            {showHeader && (
+                <div className="card__header">
+                    <div className="card__title">
+                        <FeatherIcon icon={ICONS.star} size={{ width: 16, height: 16 }} />
+                        {title}
+                    </div>
+                </div>
             )}
+            
+            <div className="symbol-search" ref={containerRef}>
+                <div className="search-input-container">
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={placeholder}
+                        className="search-input"
+                        autoFocus={autoFocus}
+                        autoComplete="off" /* Prevent browser autocomplete from interfering */
+                    />
+                    <i className="search-icon" data-feather={ICONS.search}></i>
+                </div>
+
+                {loading && <div className="symbol-search-loading">Searching...</div>}
+
+                {/* Render the dropdown only when there are results */}
+                {results.length > 0 && (
+                    <ul ref={resultsRef} className="search-results">
+                        {results.map((result, index) => (
+                            <li
+                                key={result.symbol}
+                                className={`search-result-item ${index === selectedIndex ? 'selected' : ''}`}
+                                onClick={() => handleSelectSymbol(result)}
+                                onMouseEnter={() => setSelectedIndex(index)}
+                                title={`${result.symbol}${result.name !== result.symbol ? ` - ${result.name}` : ''} - ${result.exchange || 'Unknown'} - ${result.assetType || 'Unknown'}`}
+                            >
+                                <span className="symbol">{result.symbol}</span>
+                                <span className="name">{result.name === result.symbol ? '' : result.name}</span>
+                                <span className="exchange">{result.exchange || 'Unknown'}{result.assetType ? ` (${result.assetType})` : ''}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
         </div>
     );
 }

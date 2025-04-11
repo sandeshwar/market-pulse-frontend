@@ -245,6 +245,32 @@
   font-size: 12px; /* Added smaller font size */
 }
 
+/* Loader styling within Breaking News */
+.card .breaking-news .loader-container {
+  padding: var(--spacing-sm);
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card .breaking-news .loader-text {
+  font-size: 12px;
+  margin-top: var(--spacing-sm);
+}
+
+/* Refresh button loader styling */
+.news-refresh-button .loader-container {
+  padding: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.news-refresh-button .loader-small {
+  width: 16px;
+  height: 16px;
+}
+
 .card .breaking-news .error {
   text-align: center;
   padding: var(--spacing-md); /* Reduced from spacing-lg */

@@ -6,7 +6,7 @@ import { marketDataService } from '../../../services/marketDataService.js';
 import { DEFAULT_REFRESH_INTERVAL, MAX_RETRIES, RETRY_DELAY } from '../../../constants/marketConstants.js';
 import { createElementFromHTML } from '../../../utils/dom.js';
 import { indicesWatchlistService } from '../../../services/indicesWatchlistService.js';
-import { ensureDefaultIndicesWatchlist } from '../../../utils/indicesWatchlistUtils.js';
+import { ensureDefaultIndicesWatchlist, DEFAULT_INDICES } from '../../../utils/indicesWatchlistUtils.js';
 import { createSortDropdown } from '../../common/SortDropdown/SortDropdown.js';
 import { replaceIcons } from '../../../utils/feather.js';
 
@@ -149,13 +149,6 @@ export async function createMarketIndicesCard() {
 		}
 	};
 
-	// Create initial card with loading state
-	const cardElement = createElementFromHTML(createCard({
-		title: 'Market Indices',
-		icon: ICONS.trendingUp,
-		content: createLoadingState()
-	}));
-	
 	// Define sort fields
 	const sortFields = [
 		{ id: 'name', label: 'Name' },
@@ -176,18 +169,16 @@ export async function createMarketIndicesCard() {
 		}
 	});
 	
-	// Add sort dropdown to card header
-	const cardHeader = cardElement.querySelector('.card__header');
+	// Create initial card with loading state and actions enabled
+	const cardElement = createElementFromHTML(createCard({
+		title: 'Market Indices',
+		icon: ICONS.trendingUp,
+		content: createLoadingState(),
+		showActions: true
+	}));
 	
-	// Create a container for the sort dropdown if it doesn't exist
-	let actionsContainer = cardElement.querySelector('.card__actions');
-	if (!actionsContainer) {
-		actionsContainer = document.createElement('div');
-		actionsContainer.className = 'card__actions';
-		cardHeader.appendChild(actionsContainer);
-	}
-	
-	// Add the sort dropdown to the actions container
+	// Add sort dropdown to the card's action container
+	const actionsContainer = cardElement.querySelector('.card__actions');
 	actionsContainer.appendChild(sortDropdown);
 	
 	// Make sure icons are replaced
@@ -276,11 +267,8 @@ export async function createMarketIndicesCard() {
 				}
 			} catch (storageError) {
 				console.warn('Could not load user indices preferences:', storageError);
-				// Continue with location-based defaults if we can't get user preferences
+				// Continue with default indices if we can't get user preferences
 			}
-
-			// Define major global indices that should always be shown if available
-			const majorGlobalIndices = ['SPX', 'DJI', 'IXIC', 'FTSE', 'N225', 'HSI'];
 			
 			// Filter indices based on user preferences if available
 			let indicesToShow = [];
@@ -292,65 +280,17 @@ export async function createMarketIndicesCard() {
 				);
 				
 				// If no matches found (possibly due to symbol name differences), 
-				// we'll fall back to location-based defaults below
+				// we'll fall back to default indices
 				if (indicesToShow.length === 0) {
-					console.warn('No matching indices found in user preferences, will use location-based defaults');
+					console.warn('No matching indices found in user preferences, will use default indices');
 				}
 			}
 			
-			// If no user preferences or no matches, use location-based defaults
+			// If no user preferences or no matches, use our default indices
 			if (indicesToShow.length === 0) {
-				// Try to get user's location/country
-				let userCountry = '';
-				try {
-					// Check if navigator.language is available (browser setting)
-					if (navigator.language) {
-						// Extract country code from locale (e.g., 'en-US' -> 'US')
-						const localeParts = navigator.language.split('-');
-						if (localeParts.length > 1) {
-							userCountry = localeParts[1].toUpperCase();
-						}
-					}
-					
-					console.log('Detected user country:', userCountry);
-				} catch (error) {
-					console.warn('Could not detect user country:', error);
-				}
-				
-				// Map of country codes to relevant indices
-				const countryIndicesMap = {
-					'US': ['SPX', 'DJI', 'IXIC', 'RUT'],
-					'GB': ['FTSE', 'UKX', 'MCX'],
-					'JP': ['N225', 'TOPX'],
-					'HK': ['HSI', 'HSCE'],
-					'CN': ['SSEC', 'SZSC', 'CSI300'],
-					'IN': ['NSEI', 'BSESN'],
-					'DE': ['GDAXI', 'MDAXI'],
-					'FR': ['FCHI', 'CAC40'],
-					'AU': ['AXJO', 'AORD'],
-					'CA': ['GSPTSE', 'TSX'],
-					'BR': ['BVSP', 'IBOV'],
-					'SG': ['STI'],
-					'KR': ['KS11', 'KOSPI'],
-					// Add more countries as needed
-				};
-				
-				// Get indices for user's country
-				let countryIndices = [];
-				if (userCountry && countryIndicesMap[userCountry]) {
-					countryIndices = countryIndicesMap[userCountry];
-				} else {
-					// Default to US indices if country not detected or not in our map
-					countryIndices = countryIndicesMap['US'];
-				}
-				
-				// Combine country-specific indices with major global indices
-				// Remove duplicates (some country indices might already be in global indices)
-				const defaultIndicesSet = new Set([...countryIndices, ...majorGlobalIndices]);
-				
 				// Filter available indices to match our default set
 				indicesToShow = allIndices.filter(index => 
-					defaultIndicesSet.has(index.name)
+					DEFAULT_INDICES.includes(index.name)
 				);
 				
 				// If still no matches (unlikely but possible), show top 5 indices

@@ -1,6 +1,7 @@
 :root {
   /* Color Variables */
   --bg-primary: var(--chrome-primary, #1E1E1E);
+  --bg-primary-rgb: 30, 30, 30;
   --bg-secondary: var(--chrome-secondary, #2A2A2A);
   --text-primary: var(--chrome-text-primary, #F0F0F0);
   --text-secondary: var(--chrome-text-secondary, #A0A0A0);
@@ -8,6 +9,7 @@
   --accent-positive: var(--chrome-accent-positive, #3ECF8E);
   --accent-negative: var(--chrome-accent-negative, #E57373);
   --accent-neutral: var(--chrome-accent-neutral, #7C5DFA);
+  --accent-neutral-rgb: 124, 93, 250;
   --accent-edit: var(--chrome-accent-edit, #64B5F6);
 
   /* News-specific colors */

@@ -1,7 +1,8 @@
 .settings-page {
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-xs);
+  padding: var(--spacing-md);
+  padding-top: 0px;
   gap: var(--spacing-sm);
 }
 
@@ -103,10 +104,6 @@
 .watchlist-search-section, .indices-watchlist-search-section {
   padding-top: var(--spacing-sm);
   /* border-top: 1px solid rgba(255, 255, 255, 0.1); */
-}
-
-.symbol-search-container, .indices-search-container {
-  margin-top: var(--spacing-sm);
 }
 
 /* Make placeholder text brighter */

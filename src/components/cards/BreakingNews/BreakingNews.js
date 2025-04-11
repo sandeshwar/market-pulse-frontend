@@ -55,29 +55,10 @@ export async function createBreakingNewsCard() {
   // Default categories for filtered news
   const defaultCategories = ['markets', 'economy'];
 
-  // Create initial card with loading state
-  const cardElement = createElementFromHTML(createCard({
-    title: 'Breaking News',
-    icon: ICONS.globe,
-    content: `
-      <div class="breaking-news">
-        <div class="loading">Loading news...</div>
-      </div>
-    `
-  }));
-
-  // Add the filter dropdown to the card header
-  const cardHeader = cardElement.querySelector('.card__header');
-
-  // Create a container for the filter dropdown if it doesn't exist
-  let actionsContainer = cardElement.querySelector('.card__actions');
-  if (!actionsContainer) {
-    actionsContainer = document.createElement('div');
-    actionsContainer.className = 'card__actions';
-    cardHeader.appendChild(actionsContainer);
-  }
-
-  // Create and add the news filter dropdown
+  // Define custom actions for the card
+  const customActions = [];
+  
+  // Create the news filter dropdown
   const filterDropdown = createNewsFilterDropdown({
     modes: [
       { id: 'trending', label: 'Trending' },
@@ -90,7 +71,8 @@ export async function createBreakingNewsCard() {
       loadNews(mode);
     }
   });
-
+  customActions.push(filterDropdown);
+  
   // Create refresh button
   const refreshButton = document.createElement('button');
   refreshButton.className = 'news-refresh-button';
@@ -104,9 +86,25 @@ export async function createBreakingNewsCard() {
       }, 1000);
     });
   });
-
-  actionsContainer.appendChild(filterDropdown);
-  actionsContainer.appendChild(refreshButton);
+  customActions.push(refreshButton);
+  
+  // Create initial card with loading state and actions
+  const cardElement = createElementFromHTML(createCard({
+    title: 'Breaking News',
+    icon: ICONS.globe,
+    content: `
+      <div class="breaking-news">
+        <div class="loading">Loading news...</div>
+      </div>
+    `,
+    showActions: true
+  }));
+  
+  // Add the custom actions to the card's action container
+  const actionsContainer = cardElement.querySelector('.card__actions');
+  customActions.forEach(action => {
+    actionsContainer.appendChild(action);
+  });
 
   // Function to safely update content
   const updateContent = (content) => {

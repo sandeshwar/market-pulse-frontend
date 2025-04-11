@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IndicesSearch } from '../../common/IndicesSearch/IndicesSearch.jsx';
 import { indicesWatchlistService } from '../../../services/indicesWatchlistService.js';
 import { ICONS } from '../../../utils/icons.js';
-import { ensureDefaultIndicesWatchlist, DEFAULT_INDICES_WATCHLIST_NAME } from '../../../utils/indicesWatchlistUtils.js';
+import { ensureDefaultIndicesWatchlist, DEFAULT_INDICES_WATCHLIST_NAME, DEFAULT_INDICES } from '../../../utils/indicesWatchlistUtils.js';
 import { createCard } from '../../common/Card/Card.js';
 import { createRoot } from 'react-dom/client';
-import { replaceIcons } from '../../../utils/feather.js';
+import { FeatherIcon } from '../../common/FeatherIcon/FeatherIcon.jsx';
+import Loader from '../../common/Loader/Loader.jsx';
 
-export function IndicesSettingsReact() {
+export function IndicesSettings() {
   const [watchlist, setWatchlist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,12 +44,7 @@ export function IndicesSettingsReact() {
   }, []);
 
   // Effect to replace icons after each render
-  useEffect(() => {
-    // Replace icons after the component has rendered
-    setTimeout(() => {
-      replaceIcons();
-    }, 0);
-  }, [renderKey, watchlist]); // Re-run when watchlist or renderKey changes
+  // No need to replace Feather icons anymore since we're using the FeatherIcon component
 
   const handleIndexSelect = (index) => {
     // If watchlist is not available, ensure the default watchlist exists first
@@ -105,6 +101,20 @@ export function IndicesSettingsReact() {
   const handleRemoveIndex = (indexSymbol) => {
     if (!watchlist) return;
 
+    // Check if this is one of our default indices
+    const isDefaultIndex = DEFAULT_INDICES.includes(indexSymbol);
+    
+    // Show a confirmation dialog if trying to remove a default index
+    if (isDefaultIndex) {
+      const confirmRemove = window.confirm(
+        `${indexSymbol} is one of the default market indices. Are you sure you want to remove it?`
+      );
+      
+      if (!confirmRemove) {
+        return; // User cancelled the removal
+      }
+    }
+
     const watchlistName = watchlist.name || DEFAULT_INDICES_WATCHLIST_NAME;
 
     // Optimistically update the UI first for better responsiveness
@@ -133,7 +143,7 @@ export function IndicesSettingsReact() {
     if (!watchlist || !watchlist.indices || watchlist.indices.length === 0) {
       return (
         <div className="empty-state">
-          <i data-feather={ICONS.alertCircle}></i>
+          <FeatherIcon icon={ICONS.alertCircle} size={{ width: 24, height: 24 }} />
           <p>No indices in your watchlist</p>
           <p className="empty-state__hint">Use the search above to add indices</p>
         </div>
@@ -153,7 +163,7 @@ export function IndicesSettingsReact() {
                     onClick={() => handleRemoveIndex(indexSymbol)}
                     title={`Remove ${indexSymbol}`}
                   >
-                    <i data-feather={ICONS.trash}></i>
+                    <FeatherIcon icon={ICONS.trash} size={{ width: 16, height: 16 }} />
                   </button>
                 </div>
                 <div className="symbol-card__details">
@@ -169,26 +179,21 @@ export function IndicesSettingsReact() {
 
   // Render loading state
   if (loading) {
-    return (
-      <div className="loading">
-        <div className="loading-spinner"></div>
-        <p>Loading your indices watchlist...</p>
-      </div>
-    );
+    return <Loader size="medium" type="pulse" text="Loading your indices watchlist..." />;
   }
 
   // Render error state
   if (error) {
     return (
       <div className="error-state">
-        <i data-feather={ICONS.alertTriangle}></i>
+        <FeatherIcon icon={ICONS.alertTriangle} size={{ width: 24, height: 24 }} />
         <h3>Unable to load indices watchlist</h3>
         <p>{error}</p>
         <button 
           className="btn btn--primary btn--retry" 
           onClick={loadWatchlistData}
         >
-          <i data-feather={ICONS.refreshCw}></i> Retry
+          <FeatherIcon icon={ICONS.refreshCw} size={{ width: 16, height: 16 }} /> Retry
         </button>
       </div>
     );
@@ -236,8 +241,7 @@ export async function createIndicesSettingsReact() {
       root.render(<IndicesSettingsReact />);
     }
     
-    // Replace icons
-    replaceIcons();
+    // No need to replace icons anymore
   }, 0);
 
   return settingsPage;

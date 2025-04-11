@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { marketDataService } from '../../../services/marketDataService.js';
 import { ICONS } from '../../../utils/icons.js';
 import { replaceIcons } from '../../../utils/feather.js';
+import { FeatherIcon } from '../FeatherIcon/FeatherIcon.jsx';
 import './IndicesSearch.css';
 
 /**
@@ -11,8 +12,17 @@ import './IndicesSearch.css';
  * @param {number} props.maxResults - Maximum number of results to show (default: 10)
  * @param {string} props.placeholder - Placeholder text for the input
  * @param {boolean} props.autoFocus - Whether to autofocus the input
+ * @param {string} props.title - Optional title for the component header (default: "Market Indices")
+ * @param {boolean} props.showHeader - Whether to show the header (default: true)
  */
-export function IndicesSearch({ onSelect, maxResults = 10, placeholder = "Search indices (e.g. SPX, S&P 500)", autoFocus = false }) {
+export function IndicesSearch({ 
+  onSelect, 
+  maxResults = 10, 
+  placeholder = "Search indices (e.g. SPX, S&P 500)", 
+  autoFocus = false,
+  title = "Market Indices",
+  showHeader = true
+}) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -199,44 +209,55 @@ export function IndicesSearch({ onSelect, maxResults = 10, placeholder = "Search
     };
 
     return (
-        <div className="symbol-search" ref={containerRef}>
-            <div className="search-input-container">
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={!indicesLoaded ? "Loading indices..." : placeholder}
-                    className="search-input"
-                    autoFocus={autoFocus}
-                    autoComplete="off" /* Prevent browser autocomplete from interfering */
-                    disabled={!indicesLoaded} /* Disable input while indices are loading */
-                />
-                <i className="search-icon" data-feather={ICONS.search}></i>
-            </div>
-
-            {loading && <div className="symbol-search-loading">
-                {!indicesLoaded ? "Loading indices..." : "Searching..."}
-            </div>}
-
-            {/* Render the dropdown only when there are results */}
-            {results.length > 0 && (
-                <ul ref={resultsRef} className="search-results">
-                    {results.map((result, index) => (
-                        <li
-                            key={result.symbol}
-                            className={`search-result-item ${index === selectedIndex ? 'selected' : ''}`}
-                            onClick={() => handleSelectIndex(result)}
-                            onMouseEnter={() => setSelectedIndex(index)}
-                            title={`${result.symbol} - ${result.name}`}
-                        >
-                            <span className="symbol">{result.symbol}</span>
-                            <span className="name">{result.name}</span>
-                        </li>
-                    ))}
-                </ul>
+        <div className="symbol-search-container">
+            {showHeader && (
+                <div className="card__header">
+                    <div className="card__title">
+                        <FeatherIcon icon={ICONS.trendingUp} size={{ width: 16, height: 16 }} />
+                        {title}
+                    </div>
+                </div>
             )}
+            
+            <div className="symbol-search" ref={containerRef}>
+                <div className="search-input-container">
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={!indicesLoaded ? "Loading indices..." : placeholder}
+                        className="search-input"
+                        autoFocus={autoFocus}
+                        autoComplete="off" /* Prevent browser autocomplete from interfering */
+                        disabled={!indicesLoaded} /* Disable input while indices are loading */
+                    />
+                    <i className="search-icon" data-feather={ICONS.search}></i>
+                </div>
+
+                {loading && <div className="symbol-search-loading">
+                    {!indicesLoaded ? "Loading indices..." : "Searching..."}
+                </div>}
+
+                {/* Render the dropdown only when there are results */}
+                {results.length > 0 && (
+                    <ul ref={resultsRef} className="search-results">
+                        {results.map((result, index) => (
+                            <li
+                                key={result.symbol}
+                                className={`search-result-item ${index === selectedIndex ? 'selected' : ''}`}
+                                onClick={() => handleSelectIndex(result)}
+                                onMouseEnter={() => setSelectedIndex(index)}
+                                title={`${result.symbol} - ${result.name}`}
+                            >
+                                <span className="symbol">{result.symbol}</span>
+                                <span className="name">{result.name}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
         </div>
     );
 }

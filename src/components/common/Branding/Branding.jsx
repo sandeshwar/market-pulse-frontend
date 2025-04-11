@@ -1,10 +1,10 @@
-import React from 'react';
+// 
 
 /**
  * Branding component to be displayed in the bottom right corner
  * @returns {JSX.Element} The branding component
  */
-const Branding = () => {
+export const Branding = () => {
   return (
     <a 
       className="branding"
@@ -17,5 +17,3 @@ const Branding = () => {
     </a>
   );
 };
-
-export default Branding;

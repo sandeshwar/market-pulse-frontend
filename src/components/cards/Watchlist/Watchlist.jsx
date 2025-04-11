@@ -1,11 +1,12 @@
 import { createCard } from '../../common/Card/Card.js';
 import { ICONS } from '../../../utils/icons.js';
-import { replaceIcons } from '../../../utils/feather.js';
 import { watchlistService } from '../../../services/watchlistService.js';
 import { useState, useEffect } from 'react';
 import { marketDataProvider } from '../../../services/providers/MarketDataAppProvider.js';
 import { createElementFromHTML } from '../../../utils/dom.js';
-import React from 'react';
+import { FeatherIcon } from '../../common/FeatherIcon/FeatherIcon.jsx';
+import Loader from '../../common/Loader/Loader.jsx';
+
 import { SymbolSearch } from '../../common/SymbolSearch/SymbolSearch.jsx';
 import { DEFAULT_WATCHLIST_NAME, ensureDefaultWatchlist } from '../../../utils/watchlistUtils.js';
 import { DEFAULT_REFRESH_INTERVAL } from '../../../constants/marketConstants.js';
@@ -451,7 +452,7 @@ export function WatchlistCard({ title = 'Watchlist' }) {
     // Render watchlist items
     const renderWatchlistItems = () => {
         if (loading) {
-            return <div className="loading">Loading watchlist...</div>;
+            return <Loader size="medium" type="spinner" text="Loading watchlist..." />;
         }
 
         if (error) {
@@ -468,7 +469,7 @@ export function WatchlistCard({ title = 'Watchlist' }) {
         }
 
         if (stocksData.length === 0) {
-            return <div className="loading">Loading stock data...</div>;
+            return <Loader size="medium" type="dots" text="Loading stock data..." />;
         }
 
         const sortedStocks = getSortedStocksData();
@@ -509,7 +510,7 @@ export function WatchlistCard({ title = 'Watchlist' }) {
         <div className="watchlist-card card">
             <div className="card__header">
                 <div className="card__title">
-                    <i data-feather="star"></i>
+                    <FeatherIcon icon="star" size={{ width: 16, height: 16 }} />
                     {title}
                 </div>
                 <div className="card__actions">

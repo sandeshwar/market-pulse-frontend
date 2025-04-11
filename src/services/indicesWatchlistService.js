@@ -9,10 +9,22 @@ class IndicesWatchlistService {
         if (typeof chrome !== 'undefined' && chrome.storage) {
             chrome.storage.onChanged.addListener((changes, area) => {
                 if (area === 'sync' && changes[this.storageKey]) {
-                    // Update our cache
-                    this.watchlistsCache = changes[this.storageKey].newValue;
-                    // Notify listeners with the new value
-                    this.notifyListeners(changes[this.storageKey].newValue);
+                    console.log('Chrome storage changed for indicesWatchlists:', 
+                        JSON.stringify(changes[this.storageKey].newValue));
+                    
+                    // Update our cache with a deep copy to avoid reference issues
+                    if (changes[this.storageKey].newValue) {
+                        try {
+                            this.watchlistsCache = JSON.parse(JSON.stringify(changes[this.storageKey].newValue));
+                            
+                            // Notify listeners with the new value
+                            this.notifyListeners(this.watchlistsCache);
+                        } catch (error) {
+                            console.error('Error processing storage change:', error);
+                        }
+                    } else {
+                        console.warn('Received null or undefined value from storage change');
+                    }
                 }
             });
         }
@@ -35,10 +47,24 @@ class IndicesWatchlistService {
     }
 
     notifyListeners(watchlists) {
-        console.log('Notifying indices watchlist listeners with:', watchlists);
+        console.log('Notifying indices watchlist listeners with:', JSON.stringify(watchlists));
+        
+        // Make sure we have valid data to notify about
+        if (!watchlists || !Array.isArray(watchlists)) {
+            console.warn('Invalid watchlists data for notification:', watchlists);
+            return;
+        }
+        
+        // Create a deep copy to avoid reference issues
+        const watchlistsCopy = JSON.parse(JSON.stringify(watchlists));
+        
+        // Notify each listener with the copied data
         this.listeners.forEach(callback => {
             try {
-                callback(watchlists);
+                // Use setTimeout to ensure this runs asynchronously
+                setTimeout(() => {
+                    callback(watchlistsCopy);
+                }, 0);
             } catch (error) {
                 console.error('Error in indices watchlist listener:', error);
             }
@@ -181,13 +207,24 @@ class IndicesWatchlistService {
             });
         }
 
-        await chrome.storage.sync.set({ [this.storageKey]: watchlists });
+        // Log the watchlist before saving for debugging
+        console.log('Saving updated indices watchlist:', JSON.stringify(watchlists));
         
-        // Update cache and notify listeners directly
-        this.watchlistsCache = watchlists;
-        this.notifyListeners(watchlists);
-        
-        return watchlist.indices;
+        try {
+            // Save to Chrome storage
+            await chrome.storage.sync.set({ [this.storageKey]: watchlists });
+            
+            // Update cache and notify listeners directly
+            this.watchlistsCache = JSON.parse(JSON.stringify(watchlists)); // Deep clone to avoid reference issues
+            this.notifyListeners(this.watchlistsCache);
+            
+            console.log('Successfully saved and notified about indices watchlist update');
+            
+            return watchlist.indices;
+        } catch (error) {
+            console.error('Error saving indices watchlist:', error);
+            throw error;
+        }
     }
 
     async removeIndex(watchlistName, indexSymbol) {
@@ -214,13 +251,24 @@ class IndicesWatchlistService {
             }
         }
 
-        await chrome.storage.sync.set({ [this.storageKey]: watchlists });
+        // Log the watchlist before saving for debugging
+        console.log('Saving updated indices watchlist after removal:', JSON.stringify(watchlists));
         
-        // Update cache and notify listeners directly
-        this.watchlistsCache = watchlists;
-        this.notifyListeners(watchlists);
-        
-        return watchlist.indices;
+        try {
+            // Save to Chrome storage
+            await chrome.storage.sync.set({ [this.storageKey]: watchlists });
+            
+            // Update cache and notify listeners directly
+            this.watchlistsCache = JSON.parse(JSON.stringify(watchlists)); // Deep clone to avoid reference issues
+            this.notifyListeners(this.watchlistsCache);
+            
+            console.log('Successfully saved and notified about indices watchlist update after removal');
+            
+            return watchlist.indices;
+        } catch (error) {
+            console.error('Error saving indices watchlist after removal:', error);
+            throw error;
+        }
     }
 }
 

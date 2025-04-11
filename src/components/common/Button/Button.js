@@ -1,3 +1,12 @@
+/**
+ * Re-export the Button component from the JSX file
+ * This file exists for backward compatibility
+ */
+export { default, createButtonReact } from './Button.jsx';
+
+/**
+ * @deprecated Use createButtonReact instead
+ */
 export function createButton({ 
   id,
   icon,
@@ -8,6 +17,8 @@ export function createButton({
   fullWidth = false,
   ...customAttributes
 }) {
+  console.warn('createButton is deprecated. Please use createButtonReact instead.');
+  
   const classes = [
     'btn',
     `btn--${variant}`,

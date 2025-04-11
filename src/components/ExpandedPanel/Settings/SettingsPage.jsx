@@ -1,28 +1,19 @@
-import React from 'react';
-import { createIndicesSettingsReact } from './IndicesSettingsReact.jsx';
-import { createWatchlistSettingsReact } from './WatchlistSettingsReact.jsx';
+import { useEffect } from 'react';
+import { IndicesSettings } from './IndicesSettings.jsx';
+import { WatchlistSettings } from './WatchlistSettings.jsx';
 import { replaceIcons } from '../../../utils/feather.js';
 
-export async function createSettingsPage() {
-  // Create a wrapper element
-  const settingsPage = document.createElement('div');
-  settingsPage.className = 'settings-page';
+export const SettingsPage = () => {
+  // Replace Feather icons after component renders
+  useEffect(() => {
+    replaceIcons();
+  }, []);
 
-  // Add the indices settings page (React version) first to match home page order
-  const indicesSettingsPage = await createIndicesSettingsReact();
-  settingsPage.appendChild(indicesSettingsPage);
-
-  // Add the watchlist settings page (React version)
-  const watchlistSettingsPage = await createWatchlistSettingsReact();
-  settingsPage.appendChild(watchlistSettingsPage);
-
-  // We've removed the admin dashboard card from the Chrome extension
-
-  // Replace icons after rendering
-  setTimeout(async () => {
-    await replaceIcons();
-  }, 0);
-
-  return settingsPage;
-}
+  return (
+    <div className="settings-page">
+      <IndicesSettings />
+      <WatchlistSettings />
+    </div>
+  );
+};
 

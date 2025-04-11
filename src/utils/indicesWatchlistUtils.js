@@ -7,9 +7,9 @@ export const DEFAULT_INDICES_WATCHLIST_NAME = 'My Indices Watchlist';
 export const DEFAULT_INDICES = [
   'DJI',    // Dow Jones Industrial Average (NYSE)
   'IXIC',   // NASDAQ Composite
-  'NSEI',   // SENSEX (India)
-  'SSEC',   // Shanghai Composite (China)
-  'FTSE'    // FTSE 100 (UK)
+  'SENSEX',   // SENSEX (India)
+  '399001',   // SZSE Component Index (China)
+  'UKX'    // FTSE 100 (UK)
 ];
 
 /**

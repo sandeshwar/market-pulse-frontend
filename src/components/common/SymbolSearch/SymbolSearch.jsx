@@ -146,18 +146,76 @@ export function SymbolSearch({
                     // Item is below visible area - scroll down to show it
                     container.scrollTop = itemBottom - containerHeight + 5; // Add small padding
                 }
-
-                // Log for debugging
-                console.log('Scrolling to item:', {
-                    itemTop,
-                    itemBottom,
-                    containerTop,
-                    containerBottom,
-                    newScrollTop: container.scrollTop
-                });
             }
         }
     }, [selectedIndex, results.length]);
+    
+    // Update dropdown position on window resize and scroll
+    useEffect(() => {
+        if (results.length > 0) {
+            // Function to update dropdown position
+            const updateDropdownPosition = () => {
+                if (containerRef.current && inputRef.current && resultsRef.current) {
+                    // Get the input element and its container
+                    const inputRect = inputRef.current.getBoundingClientRect();
+                    const containerRect = containerRef.current.getBoundingClientRect();
+                    
+                    // Get the computed styles of the input
+                    const inputStyles = window.getComputedStyle(inputRef.current);
+                    
+                    // Calculate the exact width of the input element including padding and border
+                    // This ensures the dropdown width matches the input width exactly
+                    const inputWidth = inputRect.width;
+                    
+                    // Set the position of the dropdown
+                    resultsRef.current.style.top = (inputRect.bottom + 2) + 'px';
+                    resultsRef.current.style.left = inputRect.left + 'px';
+                    resultsRef.current.style.width = inputWidth + 'px';
+                }
+            };
+            
+            // Update position immediately
+            updateDropdownPosition();
+            
+            // Add event listeners
+            window.addEventListener('resize', updateDropdownPosition);
+            window.addEventListener('scroll', updateDropdownPosition);
+            
+            // Cleanup
+            return () => {
+                window.removeEventListener('resize', updateDropdownPosition);
+                window.removeEventListener('scroll', updateDropdownPosition);
+            };
+        }
+    }, [results.length]);
+    
+    // Handle clicks outside the component to close the dropdown
+    useEffect(() => {
+        // Only add the listener if the dropdown is open
+        if (results.length > 0) {
+            // Function to handle clicks outside the component
+            const handleClickOutside = (event) => {
+                // Check if the click was outside both the container and the dropdown
+                if (
+                    containerRef.current && 
+                    !containerRef.current.contains(event.target) &&
+                    resultsRef.current && 
+                    !resultsRef.current.contains(event.target)
+                ) {
+                    // Clear results to close the dropdown
+                    setResults([]);
+                }
+            };
+            
+            // Add the event listener
+            document.addEventListener('mousedown', handleClickOutside);
+            
+            // Cleanup
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }
+    }, [results.length]);
 
     // Replace icons after component renders
     useEffect(() => {
@@ -200,11 +258,21 @@ export function SymbolSearch({
                     <i className="search-icon" data-feather={ICONS.search}></i>
                 </div>
 
-                {loading && <div className="symbol-search-loading">Searching...</div>}
+                {/* {loading && <div className="symbol-search-loading">Searching...</div>} */}
 
                 {/* Render the dropdown only when there are results */}
                 {results.length > 0 && (
-                    <ul ref={resultsRef} className="search-results">
+                    <ul 
+                        ref={resultsRef} 
+                        className="search-results"
+                        style={{
+                            // Position will be set by the updateDropdownPosition function
+                            // These are just initial values
+                            top: 'auto',
+                            left: 'auto',
+                            width: 'auto'
+                        }}
+                    >
                         {results.map((result, index) => (
                             <li
                                 key={result.symbol}

@@ -83,8 +83,8 @@ export const MarketIndicesCard = () => {
     }
   };
 
-  // Fetch market indices data
-  const fetchIndices = async () => {
+  // Fetch market indices data with explicitly provided indices
+  const fetchIndicesWithIndices = async (providedIndices) => {
     try {
       setLoading(true);
       const allIndices = await marketDataProvider.getMarketIndices();
@@ -93,30 +93,28 @@ export const MarketIndicesCard = () => {
         // Log all available indices for debugging
         console.log('All available indices:', allIndices.map(idx => idx.name).join(', '));
         
-        // Filter indices based on user preferences if available
+        // Filter indices based on provided indices
         let indicesToShow = [];
         
-        // Make a local copy of userIndices to avoid any state update issues
-        const currentUserIndices = [...userIndices];
-        console.log('Current user indices:', JSON.stringify(currentUserIndices));
+        console.log('Using provided indices:', JSON.stringify(providedIndices));
         
-        if (currentUserIndices.length > 0) {
-          // Filter to only show indices that the user has selected
+        if (providedIndices && providedIndices.length > 0) {
+          // Filter to only show indices that match the provided indices
           indicesToShow = allIndices.filter(index => 
-            currentUserIndices.includes(index.name)
+            providedIndices.includes(index.name)
           );
           
-          console.log('Filtered indices based on user preferences:', 
+          console.log('Filtered indices based on provided indices:', 
             indicesToShow.map(idx => idx.name).join(', '));
           
           // If no matches found (possibly due to symbol name differences), 
           // we'll fall back to default indices
           if (indicesToShow.length === 0) {
-            console.warn('No matching indices found in user preferences, will use default indices');
+            console.warn('No matching indices found in provided indices, will use default indices');
           }
         }
         
-        // If no user preferences or no matches, use our default indices
+        // If no provided indices or no matches, use our default indices
         if (indicesToShow.length === 0) {
           // Filter available indices to match our default set
           indicesToShow = allIndices.filter(index => 
@@ -156,6 +154,12 @@ export const MarketIndicesCard = () => {
       setLoading(false);
     }
   };
+  
+  // Regular fetch indices function that uses the current state
+  const fetchIndices = async () => {
+    // Use the current userIndices state
+    await fetchIndicesWithIndices([...userIndices]);
+  };
 
   // Handle retry logic
   const handleRetry = () => {
@@ -188,19 +192,26 @@ export const MarketIndicesCard = () => {
 
       // Function to handle the flip cycle
       const flipCycle = () => {
+        // Use a callback to ensure we're working with the latest state
         setFlippedIndices(prev => {
           const newState = { ...prev };
           newState[index.name] = !newState[index.name];
+          
+          // Store the current state for this index to use in the timeout calculation
+          const isCurrentlyFlipped = newState[index.name];
+          
+          // Schedule next flip based on the current state we just set
+          // This avoids the race condition by not relying on the flippedIndices state variable
+          const timeoutId = setTimeout(
+            flipCycle, 
+            isCurrentlyFlipped ? flipDuration : (cycleTime - flipDuration)
+          );
+          
+          // Add the timeout ID to our ref for cleanup
+          flipIntervalsRef.current.push(timeoutId);
+          
           return newState;
         });
-
-        // Schedule next flip
-        const timeoutId = setTimeout(
-          flipCycle, 
-          flippedIndices[index.name] ? flipDuration : (cycleTime - flipDuration)
-        );
-        
-        flipIntervalsRef.current.push(timeoutId);
       };
 
       // Start the flip cycle after initial delay
@@ -221,22 +232,28 @@ export const MarketIndicesCard = () => {
       JSON.stringify(updatedWatchlists));
     
     // Extract user indices from the updated watchlist
+    let extractedIndices = [];
+    
     if (updatedWatchlists && Array.isArray(updatedWatchlists) && updatedWatchlists.length > 0) {
       const watchlist = updatedWatchlists[0];
       if (watchlist && Array.isArray(watchlist.indices)) {
         console.log('Setting user indices to:', JSON.stringify(watchlist.indices));
-        setUserIndices([...watchlist.indices]); // Create a new array to ensure state update
+        extractedIndices = [...watchlist.indices]; // Create a new array
+        
+        // Update the state for future use
+        setUserIndices(extractedIndices);
       } else {
         console.warn('Watchlist or indices array is invalid:', watchlist);
       }
-    } else {
-      console.warn('Updated watchlists is not a valid array:', updatedWatchlists);
+    } else if (!Array.isArray(updatedWatchlists)) {
+      console.warn('Updated watchlists is not an array:', updatedWatchlists);
+    } else if (Array.isArray(updatedWatchlists) && updatedWatchlists.length === 0) {
+      console.info('Updated watchlists is an empty array (no watchlists found).');
     }
     
-    // Force immediate update
-    setTimeout(() => {
-      fetchIndices();
-    }, 100); // Small delay to ensure state is updated
+    // Force immediate update with the extracted indices
+    // This avoids the race condition by not relying on the state update
+    fetchIndicesWithIndices(extractedIndices);
   };
 
   // Initial data load
@@ -246,11 +263,12 @@ export const MarketIndicesCard = () => {
     // Load user indices first, then fetch market data
     const initializeData = async () => {
       try {
-        // First, load user indices
-        await loadUserIndices();
+        // First, load user indices and get the result directly
+        const loadedIndices = await loadUserIndices();
         
-        // Then fetch the market data
-        await fetchIndices();
+        // Then fetch the market data with the loaded indices
+        // This avoids the race condition by not relying on state updates
+        await fetchIndicesWithIndices(loadedIndices);
         
         console.log('Initial market indices data loaded successfully');
       } catch (error) {
@@ -268,7 +286,7 @@ export const MarketIndicesCard = () => {
     // Set up auto-refresh interval
     const refreshInterval = setInterval(() => {
       console.log('Auto-refreshing market indices data');
-      fetchIndices();
+      loadUserIndices().then(fetchedIndices => fetchIndicesWithIndices(fetchedIndices));
     }, DEFAULT_REFRESH_INTERVAL);
     
     // Cleanup interval and listeners on component unmount
@@ -337,7 +355,7 @@ export const MarketIndicesCard = () => {
   // Render market indices
   const renderIndices = () => {
     if (loading && indices.length === 0) {
-      return <Loader size="medium" type="spinner" text="Loading indices..." />;
+      return <Loader size="medium" type="dots" text="Loading indices..." />;
     }
 
     if (error) {

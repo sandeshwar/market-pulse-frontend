@@ -1,5 +1,17 @@
 // Service worker for Market Pulse extension - No caching
 
+// Handle extension installation and updates
+chrome.runtime.onInstalled.addListener((details) => {
+  console.log('Extension installed or updated:', details.reason);
+  
+  // Only initialize default indices on first install
+  if (details.reason === 'install') {
+    console.log('First installation - will initialize default indices');
+    // The ensureDefaultIndicesWatchlist function will handle this
+    // when the extension UI is first opened
+  }
+});
+
 // Install event - just skip waiting
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing');

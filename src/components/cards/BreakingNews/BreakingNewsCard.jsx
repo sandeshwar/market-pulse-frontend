@@ -186,7 +186,7 @@ export const BreakingNewsCard = () => {
   // Render news items
   const renderNews = () => {
     if (loading && news.length === 0) {
-      return <Loader size="large" type="dots" fullScreen="true" />;
+      return <Loader size="large" type="dots" />;
     }
 
     if (error) {

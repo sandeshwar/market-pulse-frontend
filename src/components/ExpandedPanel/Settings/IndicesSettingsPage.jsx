@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { createRoot } from 'react-dom/client';
 import { IndicesSearch } from '../../common/IndicesSearch/IndicesSearch.jsx';
 import { indicesWatchlistService } from '../../../services/indicesWatchlistService.js';

@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ICONS } from '../../../utils/icons.js';
+import { FeatherIcon } from '../FeatherIcon/FeatherIcon.jsx';
 import './SortDropdown.css';
 
 /**
@@ -38,16 +39,6 @@ export function SortDropdownReact({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
-
-  // Effect to ensure icons are properly sized after rendering
-  useEffect(() => {
-    // Apply size to the Feather icon
-    const iconElement = dropdownRef.current?.querySelector('.sort-icon svg');
-    if (iconElement) {
-      iconElement.setAttribute('width', '16');
-      iconElement.setAttribute('height', '16');
-    }
-  }, [isOpen]);
   
   // Toggle the dropdown menu
   const toggleMenu = (e) => {
@@ -76,7 +67,10 @@ export function SortDropdownReact({
   return (
     <div className="sort-dropdown" ref={dropdownRef}>
       <div className="sort-icon" title="Sort options" onClick={toggleMenu}>
-        <i data-feather={ICONS.sortAsc}></i>
+        <FeatherIcon 
+          icon={ICONS.sortAsc} 
+          size={{ width: 16, height: 16 }}
+        />
       </div>
       <div className={`sort-menu ${isOpen ? 'active' : ''}`}>
         <div className="sort-menu-header">Sort by</div>

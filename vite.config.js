@@ -38,7 +38,8 @@ export default defineConfig({
       querystring: 'querystring-es3',
       url: 'url/',
       buffer: 'buffer/',
-    }
+    },
+    extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json']
   },
   define: {
     'process.env': {},
@@ -48,12 +49,16 @@ export default defineConfig({
     esbuildOptions: {
       define: {
         global: 'globalThis'
-      }
+      },
+      jsx: 'automatic'
     }
   },
   css: {
     modules: {
       localsConvention: 'camelCase'
     }
+  },
+  esbuild: {
+    jsxInject: `import React from 'react'`
   }
 });

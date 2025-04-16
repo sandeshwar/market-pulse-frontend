@@ -11,7 +11,7 @@ import { replaceIcons } from '../../utils/feather.js';
 // Import the branding component
 import Branding from '../common/Branding/Branding.jsx';
 import { createRoot } from 'react-dom/client';
-import React from 'react';
+
 
 export async function createExpandedPanel() {
   // Create components that need cleanup

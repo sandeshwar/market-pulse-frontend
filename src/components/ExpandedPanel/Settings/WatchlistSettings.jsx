@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { SymbolSearch } from '../../common/SymbolSearch/SymbolSearch.jsx';
 import { watchlistService } from '../../../services/watchlistService.js';
 import { ICONS } from '../../../utils/icons.js';
 import { ensureDefaultWatchlist, DEFAULT_WATCHLIST_NAME } from '../../../utils/watchlistUtils.js';
 import { createCard } from '../../common/Card/Card.js';
 import { createRoot } from 'react-dom/client';
-import { replaceIcons } from '../../../utils/feather.js';
+import { FeatherIcon } from '../../common/FeatherIcon/FeatherIcon.jsx';
+import Loader from '../../common/Loader/Loader.jsx';
 
-export function WatchlistSettingsReact() {
+export function WatchlistSettings() {
   const [watchlist, setWatchlist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,12 +44,7 @@ export function WatchlistSettingsReact() {
   }, []);
 
   // Effect to replace icons after each render
-  useEffect(() => {
-    // Replace icons after the component has rendered
-    setTimeout(() => {
-      replaceIcons();
-    }, 0);
-  }, [renderKey, watchlist]); // Re-run when watchlist or renderKey changes
+  // No need to replace Feather icons anymore since we're using the FeatherIcon component
 
   const handleSymbolSelect = (symbol) => {
     // If watchlist is not available, ensure the default watchlist exists first
@@ -134,7 +130,7 @@ export function WatchlistSettingsReact() {
     if (!watchlist || !watchlist.symbols || watchlist.symbols.length === 0) {
       return (
         <div className="empty-state">
-          <i data-feather={ICONS.alertCircle}></i>
+          <FeatherIcon icon={ICONS.alertCircle} size={{ width: 24, height: 24 }} />
           <p>No stocks in your watchlist</p>
           <p className="empty-state__hint">Use the search above to add stocks</p>
         </div>
@@ -154,7 +150,7 @@ export function WatchlistSettingsReact() {
                     onClick={() => handleRemoveSymbol(symbol)}
                     title={`Remove ${symbol}`}
                   >
-                    <i data-feather={ICONS.trash}></i>
+                    <FeatherIcon icon={ICONS.trash} size={{ width: 16, height: 16 }} />
                   </button>
                 </div>
                 <div className="symbol-card__details">
@@ -170,26 +166,21 @@ export function WatchlistSettingsReact() {
 
   // Render loading state
   if (loading) {
-    return (
-      <div className="loading">
-        <div className="loading-spinner"></div>
-        <p>Loading your watchlist...</p>
-      </div>
-    );
+    return <Loader size="medium" type="pulse" text="Loading your watchlist..." />;
   }
 
   // Render error state
   if (error) {
     return (
       <div className="error-state">
-        <i data-feather={ICONS.alertTriangle}></i>
+        <FeatherIcon icon={ICONS.alertTriangle} size={{ width: 24, height: 24 }} />
         <h3>Unable to load watchlist</h3>
         <p>{error}</p>
         <button 
           className="btn btn--primary btn--retry" 
           onClick={loadWatchlistData}
         >
-          <i data-feather={ICONS.refreshCw}></i> Retry
+          <FeatherIcon icon={ICONS.refreshCw} size={{ width: 16, height: 16 }} /> Retry
         </button>
       </div>
     );
@@ -237,8 +228,7 @@ export async function createWatchlistSettingsReact() {
       root.render(<WatchlistSettingsReact />);
     }
     
-    // Replace icons
-    replaceIcons();
+    // No need to replace icons anymore
   }, 0);
 
   return settingsPage;

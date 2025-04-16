@@ -1,39 +1,44 @@
-# Market Pulse Chrome Extension (Frontend)
+# Market Pulse Chrome Extension
 
-A powerful Chrome extension designed to track market trends and insights directly from your browser. This repository contains the frontend implementation of the Market Pulse extension.
+A powerful Chrome extension designed to track market trends and insights directly from your browser. This repository contains the React-based implementation of the Market Pulse extension.
 
 ## Features
 
 - **Side Panel Integration**: Seamlessly integrates with Chrome's side panel for easy access to market information
 - **Responsive UI**: Collapsible panel design that adapts to your browsing needs
 - **Real-time Market Tracking**: Monitor market trends as you browse (requires backend connection)
-- **Modern Interface**: Clean and intuitive user interface built with modern web technologies
+- **Modern Interface**: Clean and intuitive user interface built with React
+- **Customizable Watchlists**: Create and manage personalized stock watchlists
+- **Breaking News**: Stay updated with the latest market news
 
 ## Project Structure
 
 ```
 src/
-├── components/       # UI components
-├── styles/          # Global and component-specific styles
-├── utils/           # Utility functions and helpers
-├── vendor/          # Third-party dependencies
-└── main.js          # Application entry point
+├── components/       # React components
+│   ├── cards/        # Card components for different data types
+│   ├── common/       # Shared UI components
+│   └── ExpandedPanel/# Panel and tab components
+├── services/         # API and data services
+├── styles/           # Global and component-specific styles
+├── utils/            # Utility functions and helpers
+├── constants/        # Application constants
+├── App.jsx           # Main React component
+└── main.jsx          # Application entry point
 
 server/
-├── rust_api/        # High-performance Rust API
-└── data/            # Data files
+├── rust_api/         # High-performance Rust API
+└── data/             # Data files
 
-admin/
-├── css/             # Admin dashboard styles
-├── js/              # Admin dashboard scripts
-└── index.html       # Admin dashboard entry point
+admin/                # Admin dashboard (separate application)
 ```
 
 ## Technical Details
 
 - Built using Chrome Extension Manifest V3
-- Implements modern JavaScript practices
-- Uses a modular component-based architecture
+- Modern React (v18) implementation
+- Component-based architecture
+- Vite for fast builds and development
 - Features a service worker for background operations
 
 ## Installation
@@ -41,18 +46,33 @@ admin/
 As this is a development version, the extension needs to be loaded unpacked:
 
 1. Clone this repository
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" in the top right
-4. Click "Load unpacked" and select the `frontend` directory
+2. Install dependencies: `pnpm install` or `npm install`
+3. Build the extension: `pnpm build` or `npm run build`
+4. Open Chrome and navigate to `chrome://extensions/`
+5. Enable "Developer mode" in the top right
+6. Click "Load unpacked" and select the `dist` directory
 
 ## Development
 
 This extension is built with:
-- Vanilla JavaScript (ES6+)
-- HTML5
+- React 18
+- Modern JavaScript (ES6+)
 - CSS3
 - Chrome Extension APIs
-- Rust API backend
+- Vite build system
+
+### Development Commands
+
+```bash
+# Install dependencies
+pnpm install
+
+# Development build with watch mode
+pnpm dev
+
+# Production build
+pnpm build
+```
 
 ## Admin Dashboard
 
@@ -89,7 +109,6 @@ Current Version: 2.0.0
 
 The extension implements strict Content Security Policy (CSP) and requires minimal permissions for optimal security:
 - storage
-- activeTab
 - sidePanel
 
 ## License
@@ -97,4 +116,4 @@ The extension implements strict Content Security Policy (CSP) and requires minim
 All rights reserved. This is a proprietary software.
 
 ---
-*Last Updated: January 10, 2025*
+*Last Updated: June 2024*

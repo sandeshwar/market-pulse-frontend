@@ -1,3 +1,5 @@
+window.API_BASE_URL = 'https://luminera.ai/market-pulse-rust/api/market-data'
+
 /**
  * Analytics Service
  * Handles fetching analytics data from the API
@@ -10,7 +12,7 @@
 export async function fetchAnalyticsData() {
   try {
     // Get the API URL from config or environment
-    const apiUrl = window.API_BASE_URL || 'http://localhost:3001';
+    const apiUrl = window.API_BASE_URL;
     const response = await fetch(`${apiUrl}/api/analytics`);
     
     if (!response.ok) {
@@ -32,7 +34,7 @@ export async function fetchAnalyticsData() {
 export async function updateAnalyticsConfig(enableTracking) {
   try {
     // Get the API URL from config or environment
-    const apiUrl = window.API_BASE_URL || 'http://localhost:3001';
+    const apiUrl = window.API_BASE_URL;
     const response = await fetch(`${apiUrl}/api/analytics/config`, {
       method: 'POST',
       headers: {

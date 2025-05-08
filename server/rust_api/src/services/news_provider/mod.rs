@@ -1,3 +1,3 @@
-pub mod tiingo;
+pub mod mock;
 
-pub use tiingo::TiingoNewsClient;
+pub use mock::MockNewsClient;

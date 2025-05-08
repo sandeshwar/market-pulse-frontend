@@ -1,6 +1,6 @@
 use crate::models::error::ApiError;
 use crate::models::news::{NewsResponse, NewsRequest, NewsArticle};
-use crate::services::news_provider::TiingoNewsClient;
+use crate::services::news_provider::MockNewsClient;
 use crate::services::redis::RedisManager;
 use std::env;
 use std::sync::Arc;
@@ -9,23 +9,23 @@ use chrono::{Utc, Duration};
 /// News service for fetching and caching news data
 #[derive(Clone)]
 pub struct NewsService {
-    news_client: Arc<TiingoNewsClient>,
+    news_client: Arc<MockNewsClient>,
     redis: Arc<RedisManager>,
     cache_duration: u64,
 }
 
 impl NewsService {
-    /// Creates a new news service
-    pub fn new(api_key: String, redis: Arc<RedisManager>) -> Self {
+    /// Creates a new news service with mock provider
+    pub fn new_with_mock(redis: Arc<RedisManager>) -> Self {
         // Get cache duration from environment or use default (15 minutes)
         let cache_duration = env::var("NEWS_CACHE_DURATION")
             .unwrap_or_else(|_| "900".to_string()) // 15 minutes default
             .parse::<u64>()
             .unwrap_or(900);
 
-        // Create the Tiingo news client
-        tracing::info!("Initializing Tiingo news client");
-        let news_client = Arc::new(TiingoNewsClient::new(api_key));
+        // Create the mock news client
+        tracing::info!("Initializing Mock news client");
+        let news_client = Arc::new(MockNewsClient::new());
 
         Self {
             news_client,

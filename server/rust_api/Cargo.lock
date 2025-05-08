@@ -1072,6 +1072,7 @@ dependencies = [
  "csv",
  "dotenv",
  "downcast-rs",
+ "flate2",
  "futures-util",
  "lazy_static",
  "redis",

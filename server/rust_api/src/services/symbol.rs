@@ -1,6 +1,7 @@
 use crate::models::symbol::{Symbol, SymbolCollection, AssetType};
 use crate::models::error::ApiError;
 use crate::services::redis::RedisManager;
+use crate::services::upstox_symbols::UpstoxSymbolsService;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::path::{Path, PathBuf};
@@ -12,24 +13,12 @@ use reqwest::Client;
 use std::time::Duration;
 use zip::ZipArchive;
 use tokio::time::interval;
-
-/// URL for Tiingo's supported tickers list
-const TIINGO_SUPPORTED_TICKERS_URL: &str = "https://apimedia.tiingo.com/docs/tiingo/daily/supported_tickers.zip";
-
-/// Redis key for storing the last update time of Tiingo symbols
-const TIINGO_SYMBOLS_LAST_UPDATE_KEY: &str = "tiingo:symbols:last_update";
+use std::collections::HashSet;
 
 /// Directory for storing downloaded data
 const DATA_DIR: &str = "../data";
-
-/// Path for the downloaded Tiingo zip file
-const TIINGO_ZIP_PATH: &str = "../data/tiingo_symbols.zip";
-
-/// Path for the extracted Tiingo CSV file
-const TIINGO_CSV_PATH: &str = "../data/tiingo_symbols.csv";
-
-/// Path for the filtered Tiingo CSV file (stocks only)
-const TIINGO_STOCKS_CSV_PATH: &str = "../data/tiingo_stocks.csv";
+/// Key for tracking when symbols were last updated
+const SYMBOLS_LAST_UPDATE_KEY: &str = "symbols:last_update";
 
 /// Service for managing symbols
 #[derive(Clone)]
@@ -53,7 +42,7 @@ impl SymbolService {
             .expect("Failed to create HTTP client");
 
         // Default update interval is 24 hours
-        let update_interval_hours = std::env::var("TIINGO_SYMBOLS_UPDATE_INTERVAL_HOURS")
+        let update_interval_hours = std::env::var("SYMBOLS_UPDATE_INTERVAL_HOURS")
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(24);
@@ -83,25 +72,32 @@ impl SymbolService {
         service
     }
 
-    /// Starts the background updater for Tiingo symbols
+    /// Starts the background updater for symbols
     async fn start_background_updater(&self) {
         let interval_duration = Duration::from_secs(self.update_interval_hours * 3600);
         let mut interval_timer = interval(interval_duration);
-
-        tracing::info!("Starting Tiingo symbols background updater with interval of {} hours", self.update_interval_hours);
+        
+        tracing::info!("Starting Upstox symbols background updater with interval of {} hours", self.update_interval_hours);
 
         loop {
             interval_timer.tick().await;
-
-            tracing::info!("Running scheduled Tiingo symbols update");
-            match self.download_tiingo_symbols().await {
-                Ok(_) => tracing::info!("Successfully updated Tiingo symbols"),
-                Err(e) => tracing::error!("Failed to update Tiingo symbols: {}", e),
+            
+            tracing::info!("Running scheduled Upstox symbols update");
+            if let Err(e) = self.fetch_and_merge_upstox_symbols().await {
+                tracing::error!("Failed to update Upstox symbols: {}", e);
+            } else {
+                tracing::info!("Successfully updated Upstox symbols");
+                
+                // Update the last update timestamp
+                let now = Utc::now().timestamp();
+                if let Err(e) = self.redis.set(SYMBOLS_LAST_UPDATE_KEY, &now, None).await {
+                    tracing::error!("Failed to save symbols last update timestamp: {}", e);
+                }
             }
         }
     }
 
-    /// Initializes the symbol cache from Redis, Tiingo, or CSV
+    /// Initializes the symbol cache from Redis or directly from Upstox
     async fn initialize_cache(&self) -> Result<(), ApiError> {
         // Try to load from Redis first (chunked approach)
         if let Ok(Some(chunk_count)) = self.redis.get::<usize>("symbols_chunk_count").await {
@@ -141,8 +137,8 @@ impl SymbolService {
                         symbols: all_symbols,
                     };
 
-                    // Check if we need to update from Tiingo
-                    self.check_and_update_tiingo_symbols().await?;
+                    // Check if we need to update Upstox symbols
+                    self.check_and_update_upstox_symbols().await?;
 
                     return Ok(());
                 }
@@ -156,8 +152,8 @@ impl SymbolService {
                 let mut symbols = self.symbols.write().await;
                 *symbols = collection;
 
-                // Check if we need to update from Tiingo
-                self.check_and_update_tiingo_symbols().await?;
+                // Check if we need to update Upstox symbols
+                self.check_and_update_upstox_symbols().await?;
 
                 return Ok(());
             }
@@ -168,23 +164,17 @@ impl SymbolService {
                 tracing::error!("Error loading symbols from Redis: {}", e);
             }
         }
-
-        // Try to download from Tiingo first
-        match self.download_tiingo_symbols().await {
-            Ok(true) => {
-                tracing::info!("Successfully loaded symbols from Tiingo");
-                return Ok(());
-            }
-            Ok(false) => {
-                tracing::info!("No symbols downloaded from Tiingo, falling back to CSV");
-            }
-            Err(e) => {
-                tracing::warn!("Failed to download symbols from Tiingo: {}, falling back to CSV", e);
-            }
+        
+        // Directly fetch Upstox symbols
+        tracing::info!("Fetching Upstox symbols");
+        if let Err(e) = self.fetch_and_merge_upstox_symbols().await {
+            tracing::error!("Failed to fetch and merge Upstox NSE symbols during initialization: {}", e);
+            
+            // If Upstox fails, load from CSV as a fallback
+            self.load_symbols_from_csv().await?;
+        } else {
+            tracing::info!("Successfully loaded symbols from Upstox");
         }
-
-        // If Tiingo failed, load from CSV as a fallback
-        self.load_symbols_from_csv().await?;
 
         // Save to Redis for future use
         let symbols = self.symbols.read().await;
@@ -195,23 +185,27 @@ impl SymbolService {
         Ok(())
     }
 
-    /// Checks if we need to update Tiingo symbols and does so if needed
-    async fn check_and_update_tiingo_symbols(&self) -> Result<(), ApiError> {
-        // Check when we last updated the Tiingo symbols
-        let last_update = match self.redis.get::<i64>(TIINGO_SYMBOLS_LAST_UPDATE_KEY).await {
+    /// Checks if we need to update Upstox symbols and does so if needed
+    async fn check_and_update_upstox_symbols(&self) -> Result<(), ApiError> {
+        // Check when we last updated the symbols
+        let last_update = match self.redis.get::<i64>(SYMBOLS_LAST_UPDATE_KEY).await {
             Ok(Some(timestamp)) => timestamp,
             _ => 0, // If no timestamp or error, assume we need to update
         };
 
         let now = Utc::now().timestamp();
         let update_interval_secs = self.update_interval_hours as i64 * 3600;
-
-        // If it's been longer than our update interval, update the symbols
-        if now - last_update > update_interval_secs {
-            tracing::info!("Tiingo symbols are stale, updating from Tiingo API");
-            match self.download_tiingo_symbols().await {
-                Ok(_) => tracing::info!("Successfully updated Tiingo symbols"),
-                Err(e) => tracing::error!("Failed to update Tiingo symbols: {}", e),
+        
+        // Check if we need to update Upstox NSE symbols
+        if now - last_update > (update_interval_secs / 2) {
+            tracing::info!("Checking for Upstox NSE symbols updates");
+            if let Err(e) = self.fetch_and_merge_upstox_symbols().await {
+                tracing::error!("Failed to fetch and merge Upstox NSE symbols during periodic check: {}", e);
+            }
+            
+            // Update the last update timestamp
+            if let Err(e) = self.redis.set(SYMBOLS_LAST_UPDATE_KEY, &now, None).await {
+                tracing::error!("Failed to save symbols last update timestamp: {}", e);
             }
         }
 
@@ -220,21 +214,9 @@ impl SymbolService {
     
     /// Loads symbols from the CSV file
     async fn load_symbols_from_csv(&self) -> Result<(), ApiError> {
-        // First try to load from the filtered Tiingo stocks CSV if it exists
-        let tiingo_stocks_path = Path::new(TIINGO_STOCKS_CSV_PATH);
+        // Use the fallback symbols CSV file
         let fallback_path = Path::new("../data/symbols.csv");
-
-        // Determine which CSV file to use
-        let csv_path = if tiingo_stocks_path.exists() {
-            tracing::info!("Using filtered Tiingo stocks CSV file");
-            tiingo_stocks_path
-        } else if Path::new(TIINGO_CSV_PATH).exists() {
-            tracing::info!("Using full Tiingo CSV file");
-            Path::new(TIINGO_CSV_PATH)
-        } else {
-            tracing::info!("Using fallback symbols CSV file");
-            fallback_path
-        };
+        let csv_path = fallback_path;
 
         let file = File::open(csv_path)
             .map_err(|e| ApiError::InternalError(format!("Failed to open symbols CSV at {}: {}",
@@ -303,9 +285,85 @@ impl SymbolService {
         if query.len() < 2 {
             return Ok(Vec::new());
         }
-
+        
+        // Get the current symbols from memory
         let symbols = self.symbols.read().await;
-        let results = symbols.search(query, limit);
+        let mut results = symbols.search(query, limit);
+        
+        // If we don't have enough results, try to fetch Upstox symbols directly
+        if results.len() < limit {
+            tracing::info!("Searching for Upstox symbols for query: {}", query);
+            
+            // Get the Upstox API key from environment
+            let api_key = std::env::var("UPSTOX_API_KEY")
+                .unwrap_or_else(|_| "demo_api_key".to_string());
+            
+            // Create the Upstox symbols service
+            let upstox_symbols_service = crate::services::upstox_symbols::UpstoxSymbolsService::new(api_key);
+            
+            // Fetch NSE symbols from Upstox
+            match upstox_symbols_service.fetch_nse_symbols().await {
+                Ok(upstox_symbols) => {
+                    tracing::info!("Successfully fetched {} NSE symbols from Upstox for search", upstox_symbols.len());
+                    
+                    // Filter the Upstox symbols based on the query
+                    let query_upper = query.to_uppercase();
+                    let upstox_results: Vec<Symbol> = upstox_symbols.into_iter()
+                        .filter(|s| {
+                            s.symbol.contains(&query_upper) ||
+                            s.name.to_uppercase().contains(&query_upper)
+                        })
+                        .take(limit - results.len())
+                        .collect();
+                    
+                    // Add the filtered Upstox symbols to the results
+                    if !upstox_results.is_empty() {
+                        tracing::info!("Found {} matching Upstox symbols for query: {}", upstox_results.len(), query);
+                        results.extend(upstox_results);
+                    }
+                },
+                Err(e) => {
+                    tracing::warn!("Failed to fetch NSE symbols from Upstox API for search: {}", e);
+                    // Try to use mock data as fallback
+                    let mock_symbols = crate::services::upstox_symbols::UpstoxSymbolsService::get_mock_nse_symbols();
+                    
+                    // Filter the mock symbols based on the query
+                    let query_upper = query.to_uppercase();
+                    let mock_results: Vec<Symbol> = mock_symbols.into_iter()
+                        .filter(|s| {
+                            s.symbol.contains(&query_upper) ||
+                            s.name.to_uppercase().contains(&query_upper)
+                        })
+                        .take(limit - results.len())
+                        .collect();
+                    
+                    // Add the filtered mock symbols to the results
+                    if !mock_results.is_empty() {
+                        tracing::info!("Found {} matching mock Upstox symbols for query: {}", mock_results.len(), query);
+                        results.extend(mock_results);
+                    } else {
+                        // Instead of hard-coding stocks, try to load from a cached file
+                        tracing::info!("No mock symbols match, trying to load from cached NSE symbols file");
+                        if let Ok(cached_symbols) = self.load_cached_nse_symbols().await {
+                            let fallback_results: Vec<Symbol> = cached_symbols.into_iter()
+                                .filter(|s| {
+                                    s.symbol.contains(&query_upper) ||
+                                    s.name.to_uppercase().contains(&query_upper)
+                                })
+                                .take(limit - results.len())
+                                .collect();
+                                
+                            if !fallback_results.is_empty() {
+                                tracing::info!("Found {} matching symbols from cached NSE file for query: {}", fallback_results.len(), query);
+                                results.extend(fallback_results);
+                            }
+                        } else {
+                            tracing::warn!("Could not load cached NSE symbols file, no fallback results available");
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(results)
     }
@@ -356,252 +414,86 @@ impl SymbolService {
 
         Ok(result)
     }
-    
-    /// Downloads the latest supported tickers from Tiingo
-    pub async fn download_tiingo_symbols(&self) -> Result<bool, ApiError> {
-        tracing::info!("Downloading supported tickers from Tiingo");
 
-        // Ensure data directory exists
-        tokio::task::spawn_blocking(|| -> Result<(), ApiError> {
-            create_dir_all(DATA_DIR)
-                .map_err(|e| ApiError::InternalError(format!("Failed to create data directory: {}", e)))?;
-            Ok(())
-        }).await.map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))??;
+    /// Fetches NSE symbols from Upstox and merges them with existing symbols
+    pub async fn fetch_and_merge_upstox_symbols(&self) -> Result<(), ApiError> {
+        tracing::info!("Fetching and merging Upstox NSE symbols");
 
-        // Download the ZIP file
-        let response = self.http_client.get(TIINGO_SUPPORTED_TICKERS_URL)
-            .send()
-            .await
-            .map_err(|e| ApiError::ExternalServiceError(format!("Failed to download Tiingo symbols: {}", e)))?;
+        // Get the Upstox API key from environment
+        let api_key = std::env::var("UPSTOX_API_KEY")
+            .unwrap_or_else(|_| "demo_api_key".to_string());
 
-        if !response.status().is_success() {
-            return Err(ApiError::ExternalServiceError(
-                format!("Failed to download Tiingo symbols: HTTP {}", response.status())
-            ));
-        }
+        // Create the Upstox symbols service
+        let upstox_symbols_service = UpstoxSymbolsService::new(api_key);
 
-        // Get the response bytes
-        let bytes = response.bytes()
-            .await
-            .map_err(|e| ApiError::ExternalServiceError(format!("Failed to read Tiingo symbols response: {}", e)))?;
-
-        // Save the ZIP file locally
-        tokio::task::spawn_blocking(move || -> Result<(), ApiError> {
-            let mut file = File::create(TIINGO_ZIP_PATH)
-                .map_err(|e| ApiError::InternalError(format!("Failed to create ZIP file: {}", e)))?;
-            file.write_all(&bytes)
-                .map_err(|e| ApiError::InternalError(format!("Failed to write ZIP file: {}", e)))?;
-            tracing::info!("Saved Tiingo symbols ZIP file to {}", TIINGO_ZIP_PATH);
-            Ok(())
-        }).await.map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))??;
-
-        // Extract the CSV and filter stocks in a blocking task
-        let symbols = tokio::task::spawn_blocking(|| -> Result<Vec<Symbol>, ApiError> {
-            // Open the ZIP file
-            let file = File::open(TIINGO_ZIP_PATH)
-                .map_err(|e| ApiError::InternalError(format!("Failed to open ZIP file: {}", e)))?;
-
-            let mut archive = ZipArchive::new(file)
-                .map_err(|e| ApiError::InternalError(format!("Failed to open Tiingo symbols ZIP: {}", e)))?;
-
-            // Find the CSV file in the archive (should be named "supported_tickers.csv")
-            let csv_file_name = (0..archive.len())
-                .find_map(|i| {
-                    if let Ok(file) = archive.by_index(i) {
-                        if file.name().ends_with(".csv") {
-                            return Some(file.name().to_string());
-                        }
-                    }
-                    None
-                })
-                .ok_or_else(|| ApiError::InternalError("No CSV file found in Tiingo symbols ZIP".to_string()))?;
-
-            // Extract the CSV file
-            let mut csv_file = archive.by_name(&csv_file_name)
-                .map_err(|e| ApiError::InternalError(format!("Failed to extract CSV from ZIP: {}", e)))?;
-
-            // Save the extracted CSV file
-            let mut output_file = File::create(TIINGO_CSV_PATH)
-                .map_err(|e| ApiError::InternalError(format!("Failed to create CSV file: {}", e)))?;
-
-            std::io::copy(&mut csv_file, &mut output_file)
-                .map_err(|e| ApiError::InternalError(format!("Failed to write CSV file: {}", e)))?;
-
-            tracing::info!("Extracted CSV file to {}", TIINGO_CSV_PATH);
-
-            // Now read the CSV and filter for stocks only
-            let csv_file = File::open(TIINGO_CSV_PATH)
-                .map_err(|e| ApiError::InternalError(format!("Failed to open extracted CSV: {}", e)))?;
-
-            let mut csv_reader = csv::ReaderBuilder::new()
-                .has_headers(true)
-                .from_reader(BufReader::new(csv_file));
-
-            // Create a writer for the filtered CSV
-            let stocks_file = File::create(TIINGO_STOCKS_CSV_PATH)
-                .map_err(|e| ApiError::InternalError(format!("Failed to create stocks CSV file: {}", e)))?;
-
-            let mut csv_writer = Writer::from_writer(stocks_file);
-
-            // Write the header
-            csv_writer.write_record(&["ticker", "name", "exchange", "assetType"])
-                .map_err(|e| ApiError::InternalError(format!("Failed to write CSV header: {}", e)))?;
-
-            // Parse the CSV into symbols and filter for stocks
-            let mut symbols = Vec::new();
-            let mut stock_count = 0;
-            let mut total_count = 0;
-
-            for result in csv_reader.records() {
-                let record = result
-                    .map_err(|e| ApiError::InternalError(format!("Failed to read Tiingo CSV record: {}", e)))?;
-
-                total_count += 1;
-
-                if record.len() < 2 {
-                    continue;
+        // Fetch NSE symbols from Upstox
+        let nse_symbols = match upstox_symbols_service.fetch_nse_symbols().await {
+            Ok(symbols) => {
+                tracing::info!("Successfully fetched {} NSE symbols from Upstox", symbols.len());
+                
+                // Save the symbols to the cache file for future use
+                if !symbols.is_empty() {
+                    self.save_nse_symbols_to_cache(&symbols).await;
                 }
-
-                let ticker = record.get(0).unwrap_or("").trim();
-                let name = record.get(1).unwrap_or("").trim();
-
-                // Skip empty records
-                if ticker.is_empty() || name.is_empty() {
-                    continue;
-                }
-
-                // Determine asset type (Tiingo mainly has stocks and ETFs)
-                let is_etf = name.to_uppercase().contains("ETF");
-                let asset_type = if is_etf {
-                    AssetType::Etf
-                } else {
-                    AssetType::Stock
-                };
-
-                // Only include stocks in our filtered CSV
-                if !is_etf {
-                    // Write to the filtered CSV
-                    csv_writer.write_record(&[
-                        ticker,
-                        name,
-                        "US", // Default exchange
-                        "STOCK" // Asset type
-                    ]).map_err(|e| ApiError::InternalError(format!("Failed to write to stocks CSV: {}", e)))?;
-
-                    stock_count += 1;
-                }
-
-                // Create symbol and add to collection
-                // For exchange, we'll use "US" as default since Tiingo is primarily US-focused
-                let symbol = Symbol::new(
-                    ticker.to_string(),
-                    name.to_string(),
-                    "US".to_string(),
-                    asset_type
-                );
-
-                symbols.push(symbol);
+                
+                symbols
+            },
+            Err(e) => {
+                tracing::warn!("Failed to fetch NSE symbols from Upstox API: {}, using mock data", e);
+                // Fall back to mock data if API fails
+                UpstoxSymbolsService::get_mock_nse_symbols()
             }
-
-            // Flush the writer to ensure all data is written
-            csv_writer.flush()
-                .map_err(|e| ApiError::InternalError(format!("Failed to flush stocks CSV: {}", e)))?;
-
-            tracing::info!("Filtered {} stocks out of {} total symbols to {}",
-                stock_count, total_count, TIINGO_STOCKS_CSV_PATH);
-
-            Ok(symbols)
-        }).await.map_err(|e| ApiError::InternalError(format!("Task join error: {}", e)))??;
-
-        if symbols.is_empty() {
-            tracing::warn!("No symbols found in Tiingo CSV");
-            return Ok(false);
-        }
-
-        tracing::info!("Loaded {} symbols from Tiingo", symbols.len());
-
-        // Update the symbol collection
-        let mut symbol_collection = self.symbols.write().await;
-        *symbol_collection = SymbolCollection {
-            timestamp: Some(Utc::now()),
-            symbols,
         };
 
-        // Save to Redis in chunks to avoid memory issues
-        // Redis has limits on string sizes, so we'll split the symbols into chunks
-        tracing::info!("Saving {} symbols to Redis in chunks", symbol_collection.symbols.len());
-
-        // First, clear any existing symbols
-        if let Err(e) = self.redis.delete("symbols_count").await {
-            tracing::warn!("Failed to clear Redis symbols count: {}", e);
+        if nse_symbols.is_empty() {
+            tracing::warn!("No NSE symbols found from Upstox, skipping merge");
+            return Ok(());
         }
 
-        // Store the total count
-        let count = symbol_collection.symbols.len();
-        if let Err(e) = self.redis.set("symbols_count", &count, Some(86400)).await {
-            tracing::error!("Failed to save symbols count to Redis: {}", e);
-        }
+        // Get current symbols
+        let mut symbol_collection = self.symbols.write().await;
+        
+        // Create a HashSet of existing symbol tickers for quick lookup
+        let existing_tickers: HashSet<String> = symbol_collection.symbols
+            .iter()
+            .map(|s| s.symbol.clone())
+            .collect();
 
-        // Store the timestamp
-        let timestamp = symbol_collection.timestamp;
-        if let Err(e) = self.redis.set("symbols_timestamp", &timestamp, Some(86400)).await {
-            tracing::error!("Failed to save symbols timestamp to Redis: {}", e);
-        }
-
-        // Split into chunks of 5000 symbols each
-        const CHUNK_SIZE: usize = 5000;
-        let chunks = symbol_collection.symbols.chunks(CHUNK_SIZE);
-        let chunk_count = (count + CHUNK_SIZE - 1) / CHUNK_SIZE; // Ceiling division
-
-        tracing::info!("Splitting {} symbols into {} chunks of {} symbols each",
-            count, chunk_count, CHUNK_SIZE);
-
-        for (i, chunk) in chunks.enumerate() {
-            let chunk_key = format!("symbols_chunk_{}", i);
-            if let Err(e) = self.redis.set(&chunk_key, &chunk, Some(86400)).await {
-                tracing::error!("Failed to save symbols chunk {} to Redis: {}", i, e);
-            } else {
-                tracing::debug!("Saved symbols chunk {} with {} symbols", i, chunk.len());
+        // Count before merging
+        let count_before = symbol_collection.symbols.len();
+        
+        // Add NSE symbols that don't already exist
+        let mut added_count = 0;
+        for nse_symbol in nse_symbols {
+            if !existing_tickers.contains(&nse_symbol.symbol) {
+                symbol_collection.symbols.push(nse_symbol);
+                added_count += 1;
             }
         }
 
-        // Store the number of chunks
-        if let Err(e) = self.redis.set("symbols_chunk_count", &chunk_count, Some(86400)).await {
-            tracing::error!("Failed to save symbols chunk count to Redis: {}", e);
-        }
+        tracing::info!("Added {} new NSE symbols to the collection (total: {})", 
+            added_count, symbol_collection.symbols.len());
 
-        // Update the last update timestamp
-        let now = Utc::now().timestamp();
-        if let Err(e) = self.redis.set(TIINGO_SYMBOLS_LAST_UPDATE_KEY, &now, None).await {
-            tracing::error!("Failed to save Tiingo symbols last update timestamp: {}", e);
-        }
+        // Update the timestamp
+        symbol_collection.timestamp = Some(Utc::now());
 
-        Ok(true)
+        // Store the final count for logging after we release the lock
+        let final_count = symbol_collection.symbols.len();
+
+        // Save the updated collection to Redis
+        self.save_symbols_to_redis(&symbol_collection).await?;
+
+        // Drop the mutable borrow before logging
+        drop(symbol_collection);
+
+        tracing::info!("Successfully merged and saved Upstox NSE symbols (before: {}, after: {})", 
+            count_before, final_count);
+
+        Ok(())
     }
 
-    /// Updates the symbol cache
-    pub async fn update_cache(&self) -> Result<(), ApiError> {
-        tracing::info!("Updating symbol cache");
-
-        // Try to update from Tiingo first
-        match self.download_tiingo_symbols().await {
-            Ok(true) => {
-                tracing::info!("Successfully updated symbols from Tiingo");
-                return Ok(());
-            }
-            Ok(false) => {
-                tracing::info!("No symbols downloaded from Tiingo, falling back to CSV");
-            }
-            Err(e) => {
-                tracing::warn!("Failed to download symbols from Tiingo: {}, falling back to CSV", e);
-            }
-        }
-
-        // If Tiingo failed, fall back to CSV
-        self.load_symbols_from_csv().await?;
-
-        // Save to Redis using the chunked approach
-        let symbol_collection = self.symbols.read().await;
+    /// Saves the symbol collection to Redis in chunks
+    async fn save_symbols_to_redis(&self, symbol_collection: &SymbolCollection) -> Result<(), ApiError> {
         let count = symbol_collection.symbols.len();
 
         tracing::info!("Saving {} symbols to Redis in chunks", count);
@@ -640,5 +532,109 @@ impl SymbolService {
         }
 
         Ok(())
+    }
+
+    /// Updates the symbol cache
+    pub async fn update_cache(&self) -> Result<(), ApiError> {
+        tracing::info!("Updating symbol cache");
+
+        // Load symbols from CSV as a fallback
+        if let Err(e) = self.load_symbols_from_csv().await {
+            tracing::warn!("Failed to load symbols from CSV: {}", e);
+        }
+
+        // Try to fetch and merge Upstox NSE symbols
+        if let Err(e) = self.fetch_and_merge_upstox_symbols().await {
+            tracing::error!("Failed to fetch and merge Upstox NSE symbols: {}", e);
+        }
+
+        // Save to Redis using the chunked approach
+        let symbol_collection = self.symbols.read().await;
+        self.save_symbols_to_redis(&symbol_collection).await?;
+
+        Ok(())
+    }
+    
+    /// Loads NSE symbols from a cached file
+    async fn load_cached_nse_symbols(&self) -> Result<Vec<Symbol>, ApiError> {
+        // Define the path to the cached NSE symbols file
+        let nse_cache_path = Path::new(DATA_DIR).join("nse_symbols_cache.json");
+        
+        // Check if the file exists
+        if !nse_cache_path.exists() {
+            // If not, try to create it by saving the mock symbols
+            let mock_symbols = crate::services::upstox_symbols::UpstoxSymbolsService::get_mock_nse_symbols();
+            
+            // Ensure the data directory exists
+            if let Err(e) = create_dir_all(DATA_DIR) {
+                tracing::error!("Failed to create data directory: {}", e);
+                return Err(ApiError::InternalError(format!("Failed to create data directory: {}", e)));
+            }
+            
+            // Serialize the mock symbols to JSON
+            let json = serde_json::to_string_pretty(&mock_symbols)
+                .map_err(|e| ApiError::InternalError(format!("Failed to serialize NSE symbols: {}", e)))?;
+                
+            // Write the JSON to the file
+            let mut file = File::create(&nse_cache_path)
+                .map_err(|e| ApiError::InternalError(format!("Failed to create NSE symbols cache file: {}", e)))?;
+                
+            file.write_all(json.as_bytes())
+                .map_err(|e| ApiError::InternalError(format!("Failed to write NSE symbols to cache file: {}", e)))?;
+                
+            tracing::info!("Created NSE symbols cache file with {} symbols", mock_symbols.len());
+            
+            return Ok(mock_symbols);
+        }
+        
+        // If the file exists, read it
+        let file = File::open(&nse_cache_path)
+            .map_err(|e| ApiError::InternalError(format!("Failed to open NSE symbols cache file: {}", e)))?;
+            
+        // Parse the JSON
+        let symbols: Vec<Symbol> = serde_json::from_reader(file)
+            .map_err(|e| ApiError::InternalError(format!("Failed to parse NSE symbols cache file: {}", e)))?;
+            
+        tracing::info!("Loaded {} NSE symbols from cache file", symbols.len());
+        
+        Ok(symbols)
+    }
+    
+    /// Saves NSE symbols to a cache file for future use
+    async fn save_nse_symbols_to_cache(&self, symbols: &[Symbol]) -> bool {
+        // Define the path to the cached NSE symbols file
+        let nse_cache_path = Path::new(DATA_DIR).join("nse_symbols_cache.json");
+        
+        // Ensure the data directory exists
+        if let Err(e) = create_dir_all(DATA_DIR) {
+            tracing::error!("Failed to create data directory for NSE symbols cache: {}", e);
+            return false;
+        }
+        
+        // Serialize the symbols to JSON
+        let json = match serde_json::to_string_pretty(symbols) {
+            Ok(json) => json,
+            Err(e) => {
+                tracing::error!("Failed to serialize NSE symbols for cache: {}", e);
+                return false;
+            }
+        };
+        
+        // Write the JSON to the file
+        match File::create(&nse_cache_path) {
+            Ok(mut file) => {
+                if let Err(e) = file.write_all(json.as_bytes()) {
+                    tracing::error!("Failed to write NSE symbols to cache file: {}", e);
+                    return false;
+                }
+            },
+            Err(e) => {
+                tracing::error!("Failed to create NSE symbols cache file: {}", e);
+                return false;
+            }
+        }
+        
+        tracing::info!("Successfully saved {} NSE symbols to cache file", symbols.len());
+        true
     }
 }

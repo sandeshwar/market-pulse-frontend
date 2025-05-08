@@ -32,10 +32,6 @@ async fn main() {
     let redis_manager = services::redis::RedisManager::new()
         .expect("Failed to create Redis manager");
 
-    // Initialize the symbol cache service
-    let symbols_file = std::env::var("TIINGO_SYMBOLS_FILE")
-        .unwrap_or_else(|_| "../data/tiingo_symbols.csv".to_string());
-
     // Ensure data directory exists
     let data_dir = std::env::var("DATA_DIR").unwrap_or_else(|_| "../data".to_string());
     if !std::path::Path::new(&data_dir).exists() {
@@ -44,9 +40,10 @@ async fn main() {
             .expect("Failed to create data directory");
     }
 
+    // Initialize the symbol cache service with NSE symbols only
     let symbol_cache_service = services::symbol_cache::SymbolCacheService::new(
         redis_manager.clone(),
-        symbols_file,
+        String::new(), // No symbols file, we'll use Upstox API
         7 // Cache TTL in days
     );
 
@@ -64,36 +61,35 @@ async fn main() {
     // Check if we should skip market data initialization (for testing)
     let skip_market_data = std::env::var("SKIP_MARKET_DATA").unwrap_or_else(|_| "false".to_string()) == "true";
 
-    let market_data_service = if skip_market_data {
+    // Initialize Upstox service
+    let upstox_service = Arc::new(services::upstox_market_data::UpstoxMarketDataService::new());
+    
+    // Initialize the market data service
+    let market_data_service: Arc<dyn services::market_data::MarketDataProvider> = if skip_market_data {
         tracing::info!("Skipping market data initialization (SKIP_MARKET_DATA=true)");
-        Arc::new(services::tiingo_market_data::TiingoMarketDataService::new())
+        // Use a mock or empty service for testing
+        upstox_service.clone() as Arc<dyn services::market_data::MarketDataProvider>
     } else {
-        // Create the Tiingo market data service for stocks
-        let tiingo_service = Arc::new(services::tiingo_market_data::TiingoMarketDataService::new());
-
-        // Start the background market data updater
-        tracing::info!("Starting Tiingo background updater...");
-        services::tiingo_market_data::TiingoMarketDataService::start_background_updater(tiingo_service.clone()).await;
-        tracing::info!("Tiingo background updater started.");
-
-        tiingo_service
+        // Use Upstox as the primary market data service
+        tracing::info!("Using Upstox as the primary market data service");
+        
+        // Start the background market data updater for Upstox
+        tracing::info!("Starting Upstox background updater...");
+        services::upstox_market_data::UpstoxMarketDataService::start_background_updater(upstox_service.clone()).await;
+        tracing::info!("Upstox background updater started.");
+        
+        // Use Upstox as the primary market data service
+        upstox_service.clone() as Arc<dyn services::market_data::MarketDataProvider>
     };
 
     // Initialize the indices market data service
     let indices_service = Arc::new(services::indices_market_data::IndicesMarketDataService::new());
     tracing::info!("Indices market data service initialized.");
 
-    // Initialize the news service
-    let tiingo_api_key = std::env::var("TIINGO_API_KEY")
-        .expect("TIINGO_API_KEY environment variable is required");
-
-    if tiingo_api_key.trim().is_empty() {
-        panic!("TIINGO_API_KEY environment variable cannot be empty");
-    }
-
+    // Initialize the news service with mock provider
     let redis_arc = Arc::new(redis_manager.clone());
-    let news_service = services::news::NewsService::new(tiingo_api_key, redis_arc);
-    tracing::info!("News service initialized with Tiingo provider");
+    let news_service = services::news::NewsService::new_with_mock(redis_arc);
+    tracing::info!("News service initialized with mock provider");
 
     // Initialize analytics service
     let analytics_service = Arc::new(ApiAnalytics::new());
@@ -107,6 +103,7 @@ async fn main() {
         .route("/api/symbols/count", get(handlers::symbol::get_symbols_count))
         // Dedicated endpoints for stocks
         .route("/api/market-data/stocks", get(handlers::market_data::get_stock_prices))
+        .route("/api/market-data/indian-stocks", get(handlers::market_data::get_indian_stock_prices))
         // Dedicated endpoints for indices
         .route("/api/market-data/indices", get(handlers::indices::get_indices_data))
         .route("/api/market-data/indices/all", get(handlers::indices::get_all_indices))
@@ -116,6 +113,8 @@ async fn main() {
         .route("/api/symbols/cache/exchange", get(handlers::symbol_cache::get_symbols_by_exchange))
         .route("/api/symbols/cache/asset-type", get(handlers::symbol_cache::get_symbols_by_asset_type))
         .route("/api/symbols/cache/refresh", get(handlers::symbol_cache::refresh_cache))
+        // Upstox symbols endpoint
+        .route("/api/symbols/upstox/update", get(handlers::upstox_symbols::update_upstox_symbols))
         // News endpoints
         .route("/api/market-data/news/trending", get(handlers::news::get_trending_news))
         .route("/api/market-data/news/ticker/:ticker", get(handlers::news::get_ticker_news))
@@ -152,6 +151,7 @@ async fn main() {
             symbol_service,
             symbol_cache_service,
             market_data_service,
+            upstox_market_data_service: Some(upstox_service),
             indices_data_service: Some(indices_service),
             news_service,
             analytics: Some(analytics_service),

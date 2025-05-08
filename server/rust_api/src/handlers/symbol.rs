@@ -52,9 +52,9 @@ pub async fn search_symbols(
 
     match state.symbol_service.search_symbols(&query, limit).await {
         Ok(results) => {
-            // Add a note to the results if they came from Tiingo's official list
+            // Add a note to the results
             if !results.is_empty() {
-                tracing::info!("Found {} symbols matching '{}' from Tiingo's supported list", results.len(), query);
+                tracing::info!("Found {} symbols matching '{}' from Upstox's supported list", results.len(), query);
             } else {
                 tracing::info!("No symbols found matching '{}'", query);
             }

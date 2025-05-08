@@ -1,4 +1,4 @@
-pub mod tiingo;
+pub mod upstox;
 
 use crate::models::symbol::SymbolPrice;
 use crate::models::error::ApiError;
@@ -22,8 +22,8 @@ pub trait RealTimeMarketDataProvider: Send + Sync {
     async fn unsubscribe(&self, symbols: &[String]) -> Result<(), ApiError>;
 }
 
-// Implement the trait for TiingoClient
-impl MarketDataProvider for tiingo::TiingoClient {
+// Implement the trait for UpstoxClient
+impl MarketDataProvider for upstox::UpstoxClient {
     async fn fetch_market_data(&self, symbols: &[String]) -> Result<Vec<SymbolPrice>, ApiError> {
         self.fetch_market_data(symbols).await
     }

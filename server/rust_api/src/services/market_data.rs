@@ -31,7 +31,7 @@ pub trait MarketDataProvider: Send + Sync + 'static {
 /// Enum that can hold any of the market data provider implementations
 #[derive(Clone)]
 pub enum MarketDataProviderEnum {
-    Tiingo(Arc<crate::services::tiingo_market_data::TiingoMarketDataService>),
+    Upstox(Arc<crate::services::upstox_market_data::UpstoxMarketDataService>),
     Indices(Arc<crate::services::indices_market_data::IndicesMarketDataService>),
 }
 
@@ -40,49 +40,49 @@ pub enum MarketDataProviderEnum {
 impl MarketDataProvider for MarketDataProviderEnum {
     async fn get_symbol_prices(&self, symbols: &[String]) -> Result<BatchPriceResponse, ApiError> {
         match self {
-            MarketDataProviderEnum::Tiingo(service) => service.get_symbol_prices(symbols).await,
+            MarketDataProviderEnum::Upstox(service) => service.get_symbol_prices(symbols).await,
             MarketDataProviderEnum::Indices(service) => service.get_symbol_prices(symbols).await,
         }
     }
 
     async fn track_accessed_symbols(&self, symbols: &[String]) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Tiingo(service) => service.track_accessed_symbols(symbols).await,
+            MarketDataProviderEnum::Upstox(service) => service.track_accessed_symbols(symbols).await,
             MarketDataProviderEnum::Indices(service) => service.track_accessed_symbols(symbols).await,
         }
     }
 
     async fn get_symbols_to_update(&self) -> Result<Vec<String>, ApiError> {
         match self {
-            MarketDataProviderEnum::Tiingo(service) => service.get_symbols_to_update().await,
+            MarketDataProviderEnum::Upstox(service) => service.get_symbols_to_update().await,
             MarketDataProviderEnum::Indices(service) => service.get_symbols_to_update().await,
         }
     }
 
     async fn remove_stale_symbols(&self) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Tiingo(service) => service.remove_stale_symbols().await,
+            MarketDataProviderEnum::Upstox(service) => service.remove_stale_symbols().await,
             MarketDataProviderEnum::Indices(service) => service.remove_stale_symbols().await,
         }
     }
 
     async fn update_all_cached_data(&self) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Tiingo(service) => service.update_all_cached_data().await,
+            MarketDataProviderEnum::Upstox(service) => service.update_all_cached_data().await,
             MarketDataProviderEnum::Indices(service) => service.update_all_cached_data().await,
         }
     }
 
     async fn subscribe_to_symbols(&self, symbols: &[String]) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Tiingo(service) => service.subscribe_to_symbols(symbols).await,
+            MarketDataProviderEnum::Upstox(service) => service.subscribe_to_symbols(symbols).await,
             MarketDataProviderEnum::Indices(service) => service.subscribe_to_symbols(symbols).await,
         }
     }
 
     async fn unsubscribe_from_symbols(&self, symbols: &[String]) -> Result<(), ApiError> {
         match self {
-            MarketDataProviderEnum::Tiingo(service) => service.unsubscribe_from_symbols(symbols).await,
+            MarketDataProviderEnum::Upstox(service) => service.unsubscribe_from_symbols(symbols).await,
             MarketDataProviderEnum::Indices(service) => service.unsubscribe_from_symbols(symbols).await,
         }
     }

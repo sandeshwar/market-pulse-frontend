@@ -18,7 +18,7 @@ import './SymbolSearch.css';
 export function SymbolSearch({ 
   onSelect, 
   maxResults = 10, 
-  placeholder = "Search stocks (e.g. AAPL, Apple)", 
+  placeholder = "Search US or Indian stocks (e.g. AAPL, RELIANCE)", 
   autoFocus = false,
   title = "Stock Search",
   showHeader = true
@@ -283,7 +283,10 @@ export function SymbolSearch({
                             >
                                 <span className="symbol">{result.symbol}</span>
                                 <span className="name">{result.name === result.symbol ? '' : result.name}</span>
-                                <span className="exchange">{result.exchange || 'Unknown'}{result.assetType ? ` (${result.assetType})` : ''}</span>
+                                <span className="exchange">
+                                    {result.exchange === 'NSE' ? 'NSE (Indian Stock)' : (result.exchange || 'Unknown')}
+                                    {result.assetType && result.exchange !== 'NSE' ? ` (${result.assetType})` : ''}
+                                </span>
                             </li>
                         ))}
                     </ul>

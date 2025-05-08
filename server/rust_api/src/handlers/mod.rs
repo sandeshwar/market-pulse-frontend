@@ -5,3 +5,4 @@ pub mod market_data;
 pub mod indices;
 pub mod news;
 pub mod analytics;
+pub mod upstox_symbols;

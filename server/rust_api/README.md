@@ -4,8 +4,8 @@ A high-performance API for the Market Pulse application, providing market data, 
 
 ## Features
 
-- Symbol search and lookup
-- Real-time market data from Tiingo
+- Symbol search and lookup for Indian stocks (NSE)
+- Real-time market data from Upstox API
 - Redis caching for high performance
 - Background data updater for keeping cache fresh
 - Automatic stale data cleanup
@@ -16,7 +16,7 @@ A high-performance API for the Market Pulse application, providing market data, 
 
 - Rust (latest stable version)
 - Redis server
-- Tiingo API key
+- Upstox API credentials
 
 ### Installation
 
@@ -32,8 +32,10 @@ The following environment variables can be configured in the `.env` file:
 # Redis configuration
 REDIS_URL=redis://localhost:6379
 
-# Tiingo API configuration
-TIINGO_API_KEY=your_tiingo_api_key_here
+# Upstox API configuration
+UPSTOX_API_KEY=your_upstox_api_key_here
+UPSTOX_API_SECRET=your_upstox_api_secret_here
+UPSTOX_REDIRECT_URI=your_redirect_uri_here  # Required for OAuth 2.0 flow
 
 # Market data configuration
 MARKET_DATA_CACHE_DURATION=60
@@ -44,15 +46,15 @@ MARKET_DATA_STALE_THRESHOLD=300
 RUST_LOG=market_pulse_api=debug,tower_http=debug
 ```
 
-### Tiingo API Integration
+### Upstox API Integration
 
-To use the Tiingo API, you need to:
+To use the Upstox API, you need to:
 
-1. Register for a Tiingo account at https://www.tiingo.com/
-2. Get your API key from your account dashboard
-3. Add the API key to your `.env` file
+1. Register for an Upstox developer account at https://developer.upstox.com/
+2. Create an application in the developer portal to get your API key and secret
+3. Add the API credentials to your `.env` file
 
-The API uses the Tiingo endpoints for fetching real-time stock data.
+The API uses OAuth 2.0 for authentication and connects to Upstox endpoints for fetching real-time stock data for Indian markets (NSE). The WebSocket feed is used for real-time market updates.
 
 ## Running the API
 
@@ -70,13 +72,15 @@ The API will start on port 3001 by default.
 GET /api/symbols/search?query=RELIANCE&limit=10
 ```
 
+Search for Indian stock symbols by company name or ISIN.
+
 ### Stock Prices
 
 ```
-GET /api/market-data/stocks?symbols=AAPL,MSFT,GOOGL
+GET /api/market-data/stocks?symbols=NSE_EQ|INE002A01018,NSE_EQ|INE009A01021,NSE_EQ|INE467B01029
 ```
 
-This endpoint is for stock symbols.
+This endpoint is for Indian stock symbols (NSE). The format follows the Upstox symbol convention: NSE_EQ|[ISIN].
 
 ## Architecture
 
@@ -91,7 +95,7 @@ The API follows a modular architecture:
 
 1. When a request for market data is received, the API first checks the Redis cache
 2. If the data is available and not expired, it's returned immediately
-3. If not, the API fetches the data from Tiingo API
+3. If not, the API fetches the data from Upstox API
 4. A background task periodically updates the cached data for frequently accessed symbols
 5. Stale data (not accessed for a configurable period) is automatically removed
 
@@ -115,13 +119,15 @@ cargo test
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.# Market Pulse Rust API
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-This is a high-performance Rust API for the Market Pulse application. It provides endpoints for accessing market data and symbols with extremely low latency.
+# Market Pulse Rust API
+
+This is a high-performance Rust API for the Market Pulse application. It provides endpoints for accessing Indian market data and symbols with extremely low latency.
 
 ## Features
 
-- Symbol search with efficient caching
+- Symbol search for Indian stocks (NSE) with efficient caching
 - Historical price data (planned)
 - Real-time updates (planned)
 
@@ -153,8 +159,10 @@ REDIS_URL=redis://localhost:6379
 API_PORT=3001
 API_HOST=0.0.0.0
 
-# Tiingo API configuration
-TIINGO_API_KEY=your_tiingo_api_key_here
+# Upstox API configuration
+UPSTOX_API_KEY=your_upstox_api_key_here
+UPSTOX_API_SECRET=your_upstox_api_secret_here
+UPSTOX_REDIRECT_URI=your_redirect_uri_here  # Required for OAuth 2.0 flow
 
 # Market data configuration
 MARKET_DATA_CACHE_DURATION=60
@@ -165,11 +173,11 @@ MARKET_DATA_STALE_THRESHOLD=300
 RUST_LOG=market_pulse_api=debug,tower_http=debug
 
 # Symbol data configuration
-TIINGO_SYMBOLS_UPDATE_INTERVAL_HOURS=168 # 7 days (24 * 7)
+NSE_SYMBOLS_UPDATE_INTERVAL_HOURS=168 # 7 days (24 * 7)
 
 # Data paths
 DATA_DIR=../data
-TIINGO_SYMBOLS_FILE=../data/tiingo_symbols.csv
+NSE_SYMBOLS_FILE=../data/nse_symbols.csv
 ```
 
 ### Running the API
@@ -238,13 +246,13 @@ The API will be available at `http://localhost:3001` by default.
 This project contains multiple binaries. The main API binary is `market_pulse_api`, but there are also test binaries available:
 - `test_token_generation`
 - `test_market_data_service`
-- `test_tiingo_api`
-- `test_tiingo_service`
-- `test_tiingo_symbols`
+- `test_upstox_api`
+- `test_upstox_service`
+- `test_nse_symbols`
 
 To run a specific test binary, use:
 ```bash
-cargo run --bin test_tiingo_api
+cargo run --bin test_upstox_api
 ```
 
 ## API Endpoints
@@ -260,10 +268,10 @@ Returns the health status of the API.
 ### Symbol Search
 
 ```
-GET /api/symbols/search?q=AAPL&limit=10
+GET /api/symbols/search?q=RELIANCE&limit=10
 ```
 
-Search for symbols by name or ticker.
+Search for Indian stock symbols by company name or ISIN.
 
 ### Symbol Range
 
@@ -284,10 +292,10 @@ Get the total count of available symbols.
 ### Market Data
 
 ```
-GET /api/market-data/stocks?symbols=AAPL,MSFT,GOOGL
+GET /api/market-data/stocks?symbols=NSE_EQ|INE002A01018,NSE_EQ|INE009A01021,NSE_EQ|INE467B01029
 ```
 
-Get market data for specific stock symbols.
+Get market data for specific Indian stock symbols (NSE). The format follows the Upstox symbol convention: NSE_EQ|[ISIN].
 
 ## Architecture
 
@@ -333,7 +341,7 @@ If you're experiencing issues with the API, try the following:
 
 4. **Initialize Symbols**: If no symbols are available, try initializing them
    ```bash
-   ./scripts/initialize_symbols.sh
+   ./scripts/initialize_nse_symbols.sh
    ```
 
 5. **Find the API Port**: If the API is running but you're not sure on which port
@@ -368,7 +376,7 @@ If you're experiencing issues with the API, try the following:
 
 3. **Symbol data not loading**:
    - Check if the data directory exists: `ls -la ../data`
-   - Run the initialize_symbols.sh script
+   - Run the initialize_nse_symbols.sh script
    - Check for errors in the API logs
 
 4. **API crashes on startup**:

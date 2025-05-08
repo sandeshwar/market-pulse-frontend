@@ -7,9 +7,11 @@ use serde::{Deserialize, Serialize};
 use redis::AsyncCommands;
 use crate::models::error::ApiError;
 use crate::services::redis::RedisManager;
+use crate::services::upstox_symbols::UpstoxSymbolsService;
+use crate::models::symbol::AssetType;
 use tracing::{info, debug};
 
-/// Represents a record in the Tiingo symbols CSV file
+/// Represents a record in the symbols CSV file
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SymbolRecord {
     pub ticker: String,
@@ -24,7 +26,7 @@ pub struct SymbolRecord {
     pub end_date: Option<String>,
 }
 
-/// Service for caching and retrieving Tiingo symbols
+/// Service for caching and retrieving market symbols
 #[derive(Clone)]
 pub struct SymbolCacheService {
     redis: RedisManager,
@@ -42,7 +44,7 @@ impl SymbolCacheService {
         }
     }
 
-    /// Initializes the symbol cache by loading symbols from CSV into Redis
+    /// Initializes the symbol cache by loading symbols from Redis
     pub async fn initialize(&self) -> Result<usize, ApiError> {
         // Check if symbols are already cached
         let mut conn = self.redis.get_connection().await?;
@@ -53,8 +55,14 @@ impl SymbolCacheService {
             return self.get_symbol_count().await;
         }
 
-        info!("Initializing symbol cache from file: {}", self.symbols_file_path);
-        self.load_symbols_into_redis().await
+        info!("Initializing symbol cache");
+        
+        // Load Upstox NSE symbols only
+        let upstox_count = self.load_upstox_symbols_into_redis().await?;
+        
+        info!("Initialized symbol cache with {} Upstox NSE symbols", upstox_count);
+            
+        Ok(upstox_count)
     }
 
     /// Loads all symbols from the CSV file into Redis
@@ -243,9 +251,113 @@ impl SymbolCacheService {
         Ok(symbols.into_iter().take(limit).collect())
     }
 
-    /// Refreshes the symbol cache by reloading from the CSV file
+    /// Loads Upstox NSE symbols into Redis
+    pub async fn load_upstox_symbols_into_redis(&self) -> Result<usize, ApiError> {
+        info!("Loading Upstox NSE symbols into Redis");
+
+        // Get the Upstox API key from environment
+        let api_key = std::env::var("UPSTOX_API_KEY")
+            .unwrap_or_else(|_| "demo_api_key".to_string());
+
+        // Create the Upstox symbols service
+        let upstox_symbols_service = UpstoxSymbolsService::new(api_key);
+
+        // Fetch NSE symbols from Upstox
+        let nse_symbols = match upstox_symbols_service.fetch_nse_symbols().await {
+            Ok(symbols) => {
+                info!("Successfully fetched {} NSE symbols from Upstox", symbols.len());
+                symbols
+            },
+            Err(e) => {
+                info!("Failed to fetch NSE symbols from Upstox API: {}, using mock data", e);
+                // Fall back to mock data if API fails
+                UpstoxSymbolsService::get_mock_nse_symbols()
+            }
+        };
+
+        if nse_symbols.is_empty() {
+            info!("No NSE symbols found from Upstox, skipping");
+            return Ok(0);
+        }
+
+        let mut pipe = redis::pipe();
+        let mut counter = 0;
+        let start_score = 1_000_000; // Start with a high score for consistent scoring
+
+        // Process each symbol
+        for symbol in nse_symbols {
+            // Create a SymbolRecord for consistent format
+            let record = SymbolRecord {
+                ticker: symbol.symbol.clone(),
+                exchange: symbol.exchange.clone(),
+                asset_type: match symbol.asset_type {
+                    AssetType::Stock => "STOCK".to_string(),
+                    AssetType::Etf => "ETF".to_string(),
+                    AssetType::Index => "INDEX".to_string(),
+                    AssetType::Other => "OTHER".to_string(),
+                },
+                price_currency: "INR".to_string(),
+                start_date: None,
+                end_date: None,
+            };
+
+            // Store as hash
+            pipe.hset_multiple(
+                format!("symbols:data:{}", record.ticker),
+                &[
+                    ("exchange", record.exchange.clone()),
+                    ("assetType", record.asset_type.clone()),
+                    ("priceCurrency", record.price_currency.clone()),
+                    ("startDate", record.start_date.clone().unwrap_or_default()),
+                    ("endDate", record.end_date.clone().unwrap_or_default()),
+                ],
+            );
+
+            // Add to sorted set for search (using ticker as score for alphabetical sorting)
+            // Use a high starting score for consistent scoring
+            pipe.zadd("symbols:all", record.ticker.clone(), (start_score + counter) as f64);
+
+            // Add to sets for filtering
+            pipe.sadd(format!("symbols:exchange:{}", record.exchange), record.ticker.clone());
+            pipe.sadd(format!("symbols:assetType:{}", record.asset_type), record.ticker.clone());
+
+            // Add to currency sets
+            pipe.sadd(format!("symbols:currency:{}", record.price_currency), record.ticker.clone());
+
+            counter += 1;
+
+            // Execute in batches to avoid huge pipelines
+            if counter % 1000 == 0 {
+                pipe.query_async::<_, ()>(&mut self.redis.get_connection().await?)
+                    .await?;
+
+                pipe = redis::pipe();
+                debug!("Loaded {} Upstox NSE symbols into Redis", counter);
+            }
+        }
+
+        // Execute remaining commands
+        pipe.query_async::<_, ()>(&mut self.redis.get_connection().await?)
+            .await?;
+
+        // Update the last updated timestamp
+        let mut conn = self.redis.get_connection().await?;
+        let now = chrono::Utc::now().timestamp();
+        conn.set::<_, _, ()>("symbols:last_updated", now).await?;
+
+        // Set expiration if TTL is specified
+        if self.cache_ttl_days > 0 {
+            let ttl_seconds = self.cache_ttl_days * 24 * 60 * 60;
+            conn.expire::<_, ()>("symbols:last_updated", (ttl_seconds).try_into().unwrap()).await?;
+        }
+
+        info!("Successfully loaded {} Upstox NSE symbols into Redis", counter);
+        Ok(counter)
+    }
+
+    /// Refreshes the symbol cache by reloading from the CSV file and Upstox
     pub async fn refresh_cache(&self) -> Result<usize, ApiError> {
-        info!("Refreshing symbol cache from file: {}", self.symbols_file_path);
+        info!("Refreshing symbol cache");
 
         // Delete existing keys
         let mut conn = self.redis.get_connection().await?;
@@ -262,9 +374,13 @@ impl SymbolCacheService {
                 .query_async::<_, ()>(&mut conn)
                 .await?;
         }
-
-        // Reload symbols
-        self.load_symbols_into_redis().await
+        
+        // Load Upstox NSE symbols only
+        let upstox_count = self.load_upstox_symbols_into_redis().await?;
+        
+        info!("Refreshed symbol cache with {} Upstox NSE symbols", upstox_count);
+            
+        Ok(upstox_count)
     }
 
     /// Gets the last updated timestamp for the symbol cache

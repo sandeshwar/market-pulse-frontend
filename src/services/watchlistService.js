@@ -126,7 +126,8 @@ class WatchlistService {
                 symbol: symbolData.symbol,
                 name: symbolData.name || symbolData.symbol,
                 exchange: symbolData.exchange || '',
-                assetType: symbolData.assetType || symbolData.asset_type || 'Stock'
+                assetType: symbolData.assetType || symbolData.asset_type || 'Stock',
+                market: symbolData.market || 'US' // Add market field to identify Indian stocks (NSE)
             });
         } else {
             // If only string was provided, create a minimal object
@@ -134,7 +135,8 @@ class WatchlistService {
                 symbol: symbolStr,
                 name: symbolStr,
                 exchange: 'US',
-                assetType: 'Stock'
+                assetType: 'Stock',
+                market: 'US'
             });
         }
 

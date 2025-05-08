@@ -193,7 +193,7 @@ export function WatchlistSettings() {
         <SymbolSearch
           onSelect={handleSymbolSelect}
           maxResults={6}
-          placeholder="Search and add symbol (e.g. AAPL)"
+          placeholder="Search US or Indian stocks (e.g. AAPL, RELIANCE)"
           autoFocus={false}
         />
       </div>

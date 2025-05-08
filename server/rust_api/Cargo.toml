@@ -40,6 +40,7 @@ scraper = "0.18.1"
 downcast-rs = "1.2.0"
 lazy_static = "1.4.0"
 zip = "0.6.6"
+flate2 = "1.0.28"
 
 [[bin]]
 name = "test_token_generation"
@@ -49,14 +50,3 @@ path = "scripts/test_token_generation.rs"
 name = "test_market_data_service"
 path = "scripts/test_market_data_service.rs"
 
-[[bin]]
-name = "test_tiingo_api"
-path = "scripts/test_tiingo_api.rs"
-
-[[bin]]
-name = "test_tiingo_service"
-path = "scripts/test_tiingo_service.rs"
-
-[[bin]]
-name = "test_tiingo_symbols"
-path = "scripts/test_tiingo_symbols.rs"

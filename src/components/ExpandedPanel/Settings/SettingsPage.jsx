@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { IndicesSettings } from './IndicesSettings.jsx';
-import { WatchlistSettings } from './WatchlistSettings.jsx';
 import { replaceIcons } from '../../../utils/feather.js';
 
 export const SettingsPage = () => {
@@ -12,8 +11,6 @@ export const SettingsPage = () => {
   return (
     <div className="settings-page">
       <IndicesSettings />
-      <WatchlistSettings />
     </div>
   );
 };
-

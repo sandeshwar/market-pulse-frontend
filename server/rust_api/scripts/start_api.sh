@@ -263,13 +263,9 @@ if [ "$BACKGROUND" = true ]; then
     if lsof -i :$PORT -P -n | grep LISTEN | grep "$API_PID" > /dev/null 2>&1; then
         echo "API started successfully on port $PORT (PID: $API_PID)"
 
-        # Initialize symbols
-        echo "Initializing symbols..."
-        cd scripts
-        ./initialize_symbols.sh --host "localhost:$PORT"
-
         # Check API health
         echo "Checking API health..."
+        cd scripts
         ./check_api_health.sh --host "localhost:$PORT"
 
         echo "API startup completed. The API is now running on port $PORT."

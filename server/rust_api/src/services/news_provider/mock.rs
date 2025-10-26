@@ -57,9 +57,10 @@ impl MockNewsClient {
         // Generate ticker-specific news if tickers are provided
         if let Some(tickers_str) = &request.tickers {
             let tickers: Vec<&str> = tickers_str.split(',').collect();
+            let tickers_len = tickers.len().max(1);
             
-            for ticker in tickers {
-                articles.extend(self.generate_ticker_news(ticker, limit / tickers.len().max(1)));
+            for ticker in &tickers {
+                articles.extend(self.generate_ticker_news(*ticker, limit / tickers_len));
             }
         } else {
             // Generate general news
@@ -96,9 +97,10 @@ impl MockNewsClient {
             articles.truncate(limit);
         }
         
+        let total_count = articles.len();
         Ok(NewsResponse {
             articles,
-            total_count: Some(articles.len()),
+            total_count: Some(total_count),
             next_cursor: None,
         })
     }

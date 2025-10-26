@@ -2,7 +2,6 @@
 import { createExpandedPanel } from './components/ExpandedPanel/ExpandedPanel.js';
 import { initNavigation, navigationHandlers } from './utils/navigation.js';
 import { replaceIcons } from './utils/feather.js';
-import { watchlistService } from './services/watchlistService.js';
 
 // Initial state
 let isPanelExpanded = false;
@@ -32,60 +31,6 @@ function updatePanelVisibility() {
   }
 }
 
-// Watchlist handlers
-async function handleEditWatchlist(name) {
-  const newName = prompt('Enter new name for watchlist:', name);
-  if (newName && newName !== name) {
-    try {
-      await watchlistService.renameWatchlist(name, newName);
-    } catch (error) {
-      console.error('Error renaming watchlist:', error);
-      alert('Failed to rename watchlist');
-    }
-  }
-}
-
-async function handleDeleteWatchlist(name) {
-  if (confirm(`Are you sure you want to delete the watchlist "${name}"?`)) {
-    try {
-      await watchlistService.deleteWatchlist(name);
-    } catch (error) {
-      console.error('Error deleting watchlist:', error);
-      alert('Failed to delete watchlist');
-    }
-  }
-}
-
-async function handleCreateWatchlist() {
-  const name = prompt('Enter watchlist name:');
-  if (name) {
-    try {
-      await watchlistService.createWatchlist(name);
-    } catch (error) {
-      console.error('Error creating watchlist:', error);
-      alert('Failed to create watchlist');
-    }
-  }
-}
-
-async function handleAddSymbol(watchlistName, symbol) {
-  try {
-    await watchlistService.addSymbol(watchlistName, symbol);
-  } catch (error) {
-    console.error('Error adding symbol:', error);
-    alert('Failed to add symbol to watchlist');
-  }
-}
-
-async function handleRemoveSymbol(watchlistName, symbol) {
-  try {
-    await watchlistService.removeSymbol(watchlistName, symbol);
-  } catch (error) {
-    console.error('Error removing symbol:', error);
-    alert('Failed to remove symbol from watchlist');
-  }
-}
-
 // Event handler map
 const buttonHandlers = {
   togglePanel,
@@ -93,42 +38,6 @@ const buttonHandlers = {
   handleCardOptions: () => {
     console.log('Card options clicked');
   },
-  editWatchlist: (event) => {
-    const button = event.target.closest('button');
-    const name = button.dataset.watchlistName;
-    if (name) {
-      handleEditWatchlist(name);
-    }
-  },
-  deleteWatchlist: (event) => {
-    const button = event.target.closest('button');
-    const name = button.dataset.watchlistName;
-    if (name) {
-      handleDeleteWatchlist(name);
-    }
-  },
-  createWatchlist: () => {
-    handleCreateWatchlist();
-  },
-  addSymbol: (event) => {
-    const button = event.target.closest('button');
-    const name = button.dataset.watchlistName;
-    if (name) {
-      const input = button.closest('.list-footer').querySelector('input');
-      if (input && input.value) {
-        handleAddSymbol(name, input.value);
-        input.value = '';
-      }
-    }
-  },
-  removeSymbol: (event) => {
-    const button = event.target.closest('button');
-    const name = button.dataset.watchlistName;
-    const symbol = button.dataset.symbol;
-    if (name && symbol) {
-      handleRemoveSymbol(name, symbol);
-    }
-  }
 };
 
 function setupButtonEventListeners() {

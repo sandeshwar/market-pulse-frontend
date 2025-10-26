@@ -1,8 +1,6 @@
 import { createTabNavigation } from './TabNavigation/TabNavigation.js';
 import { createMarketIndicesCard } from '../cards/MarketIndices/MarketIndicesWithSortDropdown.js';
 // import { createWatchlistCard } from '../cards/Watchlist/Watchlist.jsx';
-// Import the React wrapper for future use
-import { createWatchlistCardReact } from '../cards/Watchlist/WatchlistReactWrapper.jsx';
 import { createBreakingNewsCard } from '../cards/BreakingNews/BreakingNews.js';
 import { createSettingsPage } from './Settings/SettingsPage.jsx';
 import { replaceIcons } from '../../utils/feather.js';
@@ -16,14 +14,12 @@ import { createRoot } from 'react-dom/client';
 export async function createExpandedPanel() {
   // Create components that need cleanup
   const marketIndicesCard = await createMarketIndicesCard();
-  const watchlistCard = await createWatchlistCardReact({ title: 'My Watchlist' });
   const newsCard = await createBreakingNewsCard();
   const settingsPage = await createSettingsPage();
   
   // Store cleanup functions
   const cleanupFunctions = new Set([
     marketIndicesCard.cleanup,
-    watchlistCard.cleanup,
     newsCard.cleanup
   ]);
   
@@ -53,7 +49,6 @@ export async function createExpandedPanel() {
   homeTab.dataset.tab = 'home';
   // Don't clone the marketIndicesCard as it loses event listeners and timeouts
   homeTab.appendChild(marketIndicesCard);
-  homeTab.appendChild(watchlistCard);
   panelContent.appendChild(homeTab);
   
   // Watchlists tab

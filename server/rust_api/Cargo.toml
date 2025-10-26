@@ -41,6 +41,7 @@ downcast-rs = "1.2.0"
 lazy_static = "1.4.0"
 zip = "0.6.6"
 flate2 = "1.0.28"
+rand = "0.8"
 
 [[bin]]
 name = "test_token_generation"

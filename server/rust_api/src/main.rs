@@ -40,47 +40,7 @@ async fn main() {
             .expect("Failed to create data directory");
     }
 
-    // Initialize the symbol cache service with NSE symbols only
-    let symbol_cache_service = services::symbol_cache::SymbolCacheService::new(
-        redis_manager.clone(),
-        String::new(), // No symbols file, we'll use Upstox API
-        7 // Cache TTL in days
-    );
-
-    // Initialize the symbol cache
-    match symbol_cache_service.initialize().await {
-        Ok(count) => tracing::info!("Initialized symbol cache with {} symbols", count),
-        Err(e) => tracing::error!("Failed to initialize symbol cache: {}", e),
-    }
-
-    // Initialize other services
-    tracing::info!("Initializing SymbolService...");
-    let symbol_service = services::symbol::SymbolService::new().await;
-    tracing::info!("SymbolService initialized.");
-
-    // Check if we should skip market data initialization (for testing)
-    let skip_market_data = std::env::var("SKIP_MARKET_DATA").unwrap_or_else(|_| "false".to_string()) == "true";
-
-    // Initialize Upstox service
-    let upstox_service = Arc::new(services::upstox_market_data::UpstoxMarketDataService::new());
-    
-    // Initialize the market data service
-    let market_data_service: Arc<dyn services::market_data::MarketDataProvider> = if skip_market_data {
-        tracing::info!("Skipping market data initialization (SKIP_MARKET_DATA=true)");
-        // Use a mock or empty service for testing
-        upstox_service.clone() as Arc<dyn services::market_data::MarketDataProvider>
-    } else {
-        // Use Upstox as the primary market data service
-        tracing::info!("Using Upstox as the primary market data service");
-        
-        // Start the background market data updater for Upstox
-        tracing::info!("Starting Upstox background updater...");
-        services::upstox_market_data::UpstoxMarketDataService::start_background_updater(upstox_service.clone()).await;
-        tracing::info!("Upstox background updater started.");
-        
-        // Use Upstox as the primary market data service
-        upstox_service.clone() as Arc<dyn services::market_data::MarketDataProvider>
-    };
+    // Remove stock symbol services and Upstox initialization (indices-only)
 
     // Initialize the indices market data service
     let indices_service = Arc::new(services::indices_market_data::IndicesMarketDataService::new());
@@ -95,26 +55,12 @@ async fn main() {
     let analytics_service = Arc::new(ApiAnalytics::new());
     let analytics_service_clone = analytics_service.clone();
 
-    // Build our application with routes
+    // Build our application with routes (indices/news/health/analytics only)
     let app = Router::new()
         .route("/api/health", get(handlers::health::health_check))
-        .route("/api/symbols/search", get(handlers::symbol::search_symbols))
-        .route("/api/symbols/range", get(handlers::symbol::get_symbols_by_range))
-        .route("/api/symbols/count", get(handlers::symbol::get_symbols_count))
-        // Dedicated endpoints for stocks
-        .route("/api/market-data/stocks", get(handlers::market_data::get_stock_prices))
-        .route("/api/market-data/indian-stocks", get(handlers::market_data::get_indian_stock_prices))
-        // Dedicated endpoints for indices
+        // Indices endpoints
         .route("/api/market-data/indices", get(handlers::indices::get_indices_data))
         .route("/api/market-data/indices/all", get(handlers::indices::get_all_indices))
-        // Symbol cache endpoints
-        .route("/api/symbols/cache/status", get(handlers::symbol_cache::get_cache_status))
-        .route("/api/symbols/cache/search", get(handlers::symbol_cache::search_symbols_by_prefix))
-        .route("/api/symbols/cache/exchange", get(handlers::symbol_cache::get_symbols_by_exchange))
-        .route("/api/symbols/cache/asset-type", get(handlers::symbol_cache::get_symbols_by_asset_type))
-        .route("/api/symbols/cache/refresh", get(handlers::symbol_cache::refresh_cache))
-        // Upstox symbols endpoint
-        .route("/api/symbols/upstox/update", get(handlers::upstox_symbols::update_upstox_symbols))
         // News endpoints
         .route("/api/market-data/news/trending", get(handlers::news::get_trending_news))
         .route("/api/market-data/news/ticker/:ticker", get(handlers::news::get_ticker_news))
@@ -148,10 +94,6 @@ async fn main() {
             }
         }))
         .with_state(AppState {
-            symbol_service,
-            symbol_cache_service,
-            market_data_service,
-            upstox_market_data_service: Some(upstox_service),
             indices_data_service: Some(indices_service),
             news_service,
             analytics: Some(analytics_service),

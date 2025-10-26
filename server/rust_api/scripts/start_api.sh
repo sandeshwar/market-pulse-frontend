@@ -13,6 +13,8 @@ chmod +x *.sh
 BACKGROUND=true
 PORT=3001
 SKIP_BUILD=false
+START_EXTRACTOR=true
+EXTRACTOR_LOG="indices_extractor.log"
 MAX_WAIT_TIME=60  # Maximum time to wait for API to start (in seconds)
 CHECK_INTERVAL=5  # Time between checks (in seconds)
 
@@ -31,12 +33,17 @@ while [[ $# -gt 0 ]]; do
             SKIP_BUILD=true
             shift
             ;;
+        --no-extractor)
+            START_EXTRACTOR=false
+            shift
+            ;;
         --help)
             echo "Usage: $0 [options]"
             echo "Options:"
             echo "  --foreground       Run the API in the foreground (default: background)"
             echo "  --port PORT        Specify the port to use (default: 3001)"
             echo "  --skip-build       Skip the build step (default: false)"
+            echo "  --no-extractor     Do not start the indices extractor service"
             echo "  --help             Show this help message"
             exit 0
             ;;
@@ -82,7 +89,7 @@ if lsof -i :$PORT > /dev/null 2>&1; then
     sleep 2
 fi
 
-# Build the API if not skipped
+# Build the API and extractor if not skipped
 if [ "$SKIP_BUILD" = false ]; then
     echo "Building the API..."
 
@@ -105,11 +112,34 @@ if [ "$SKIP_BUILD" = false ]; then
         echo "  For Alpine Linux: apk add openssl-dev"
         exit 1
     fi
+
+    if [ "$START_EXTRACTOR" = true ]; then
+        echo "Building the indices extractor service..."
+        (cd indices_extractor && cargo build)
+        if [ $? -ne 0 ]; then
+            echo "Failed to build the indices extractor service."
+            exit 1
+        fi
+    fi
 fi
 
 # Set environment variables for debugging
 export RUST_LOG=debug
 export RUST_BACKTRACE=1
+
+# Function to clean up background processes
+cleanup() {
+    if [ -n "$API_PID" ] && ps -p $API_PID > /dev/null 2>&1; then
+        echo "Stopping API process (PID: $API_PID)"
+        kill $API_PID 2>/dev/null || true
+    fi
+    if [ -n "$EXTRACTOR_PID" ] && ps -p $EXTRACTOR_PID > /dev/null 2>&1; then
+        echo "Stopping indices extractor process (PID: $EXTRACTOR_PID)"
+        kill $EXTRACTOR_PID 2>/dev/null || true
+    fi
+}
+
+trap cleanup EXIT INT TERM
 
 # Function to check if the API is healthy
 check_api_health() {
@@ -168,6 +198,13 @@ if [ "$BACKGROUND" = true ]; then
     echo "Starting the API server in the background on port $PORT..."
     cargo run --bin market_pulse_api > api_startup.log 2>&1 &
     API_PID=$!
+
+    if [ "$START_EXTRACTOR" = true ]; then
+        echo "Starting the indices extractor service in the background..."
+        (cd indices_extractor && cargo run --bin indices_extractor > "../$EXTRACTOR_LOG" 2>&1 &)
+        EXTRACTOR_PID=$!
+        echo "Indices extractor running with PID $EXTRACTOR_PID (logs: $EXTRACTOR_LOG)"
+    fi
 
     # Wait for the API to start with progressive checks
     echo "Waiting for the API to start (PID: $API_PID)..."
@@ -280,6 +317,14 @@ if [ "$BACKGROUND" = true ]; then
 else
     # Start the API in the foreground
     echo "Starting the API server in the foreground on port $PORT..."
+
+    if [ "$START_EXTRACTOR" = true ]; then
+        echo "Starting the indices extractor service in the background..."
+        (cd indices_extractor && cargo run --bin indices_extractor > "../$EXTRACTOR_LOG" 2>&1 &)
+        EXTRACTOR_PID=$!
+        echo "Indices extractor running with PID $EXTRACTOR_PID (logs: $EXTRACTOR_LOG)"
+    fi
+
     echo "Press Ctrl+C to stop the API."
     echo "---------------------------------------------------"
     cargo run --bin market_pulse_api

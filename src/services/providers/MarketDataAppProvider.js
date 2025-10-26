@@ -8,7 +8,8 @@ export class MarketDataAppProvider {
   async initialize() {
     if (this.initialized) return;
 
-    this.apiKey = config.API_KEY?.trim() || null;
+    const resolvedConfig = config?.API_KEY ? config : (config.default ?? {});
+    this.apiKey = resolvedConfig.API_KEY?.trim() || null;
 
     if (!this.apiKey) {
       console.warn('MarketDataAppProvider: API key not configured, proceeding without authentication.');
@@ -44,12 +45,24 @@ export class MarketDataAppProvider {
       // Log the entire response for debugging
       console.log('Indices API Response data:', data);
 
-      if (!data || !data.prices) {
-        throw new Error('Invalid response format from indices API');
+      if (data?.error) {
+        const errorMessage = data.error || 'Indices API returned an error';
+        const detailedMessage = data.code ? `${errorMessage} (code: ${data.code})` : errorMessage;
+        throw new Error(detailedMessage);
+      }
+
+      const prices = data?.prices;
+      if (!prices || typeof prices !== 'object') {
+        throw new Error('Indices API returned no price data');
+      }
+
+      const priceEntries = Object.entries(prices);
+      if (priceEntries.length === 0) {
+        throw new Error('No indices data available');
       }
 
       // Transform the response to match our expected format
-      const validQuotes = Object.entries(data.prices).map(([symbol, indexData]) => {
+      const validQuotes = priceEntries.map(([symbol, indexData]) => {
         // Extract the name from additional_data or use the symbol as fallback
         const name = indexData.additional_data?.name || symbol;
 

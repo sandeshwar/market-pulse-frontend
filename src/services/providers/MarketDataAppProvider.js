@@ -8,10 +8,10 @@ export class MarketDataAppProvider {
   async initialize() {
     if (this.initialized) return;
 
-    this.apiKey = config.API_KEY;
+    this.apiKey = config.API_KEY?.trim() || null;
 
     if (!this.apiKey) {
-      throw new Error('API key not configured');
+      console.warn('MarketDataAppProvider: API key not configured, proceeding without authentication.');
     }
 
     this.initialized = true;

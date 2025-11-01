@@ -1,15 +1,15 @@
 # Market Pulse Chrome Extension
 
-A powerful Chrome extension designed to track market trends and insights directly from your browser. This repository contains the React-based implementation of the Market Pulse extension.
+A powerful Chrome extension designed to track market indices and financial news directly from your browser. This repository contains the React-based implementation of the Market Pulse extension.
 
 ## Features
 
 - **Side Panel Integration**: Seamlessly integrates with Chrome's side panel for easy access to market information
 - **Responsive UI**: Collapsible panel design that adapts to your browsing needs
-- **Real-time Market Tracking**: Monitor market trends as you browse (requires backend connection)
+- **Market Indices Tracking**: Monitor global market indices from TradingView in real-time
 - **Modern Interface**: Clean and intuitive user interface built with React
-- **Customizable Watchlists**: Create and manage personalized stock watchlists
-- **Breaking News**: Stay updated with the latest market news
+- **Indices Watchlists**: Create and manage personalized indices watchlists
+- **Breaking News**: Stay updated with the latest financial news
 
 ## Project Structure
 

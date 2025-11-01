@@ -112,7 +112,9 @@
 /* Search section styling */
 .watchlist-search-section, .indices-watchlist-search-section {
   padding-top: var(--spacing-sm);
-  /* border-top: 1px solid rgba(255, 255, 255, 0.1); */
+  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   /* Ensure dropdowns can be visible */
   overflow: visible;
   position: relative;
@@ -127,6 +129,34 @@
   opacity: 1 !important;
 }
 
+/* Symbol/Index cards */
+.symbol-card, .index-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm);
+  transition: all 0.2s ease;
+}
+
+.symbol-card:hover, .index-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.symbol-card__header, .index-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.symbol-ticker, .index-ticker {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+}
+
 /* Empty state styling */
 .empty-state {
   display: flex;
@@ -139,6 +169,7 @@
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius-md);
   border: 1px dashed rgba(255, 255, 255, 0.1);
+  margin-top: var(--spacing-md);
 }
 
 .empty-state i {

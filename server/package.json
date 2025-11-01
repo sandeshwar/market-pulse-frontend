@@ -1,0 +1,23 @@
+{
+  "name": "market-pulse-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Market Pulse - Indices watchlist and data scraping service",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "puppeteer": "^21.5.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": ["market-data", "indices", "scraping", "api"],
+  "author": "",
+  "license": "ISC"
+}

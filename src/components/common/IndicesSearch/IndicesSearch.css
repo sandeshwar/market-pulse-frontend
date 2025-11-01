@@ -39,8 +39,58 @@
     z-index: 1000;
 }
 
+/* Search input container styling */
+.symbol-search .search-input-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Search input styling to match app aesthetics */
+.symbol-search .search-input,
 .symbol-search-container .search-input {
-    border-color: var(--border-color, rgba(255, 255, 255, 0.05));
+    width: 100%;
+    padding: 10px 40px 10px 12px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: var(--text-primary, #ffffff);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.symbol-search .search-input:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.symbol-search .search-input:focus {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
+}
+
+.symbol-search .search-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.symbol-search .search-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Search icon styling */
+.symbol-search .search-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.4);
+    pointer-events: none;
+    width: 18px;
+    height: 18px;
 }
 
 /* Add specific styles for the search results dropdown */

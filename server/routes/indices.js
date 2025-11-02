@@ -34,7 +34,8 @@ export default function createIndicesRoutes(indexManager) {
       console.error('Error in /indices/all:', error);
       res.status(500).json({
         error: 'Failed to retrieve indices data',
-        message: error.message
+        message: error.message,
+        request_id: req.id
       });
     }
   });
@@ -51,7 +52,8 @@ export default function createIndicesRoutes(indexManager) {
       if (!q) {
         return res.status(400).json({
           error: 'Missing search query',
-          message: 'Query parameter "q" is required'
+          message: 'Query parameter "q" is required',
+          request_id: req.id
         });
       }
       
@@ -66,7 +68,8 @@ export default function createIndicesRoutes(indexManager) {
       console.error('Error in /indices/search:', error);
       res.status(500).json({
         error: 'Search failed',
-        message: error.message
+        message: error.message,
+        request_id: req.id
       });
     }
   });
@@ -82,7 +85,8 @@ export default function createIndicesRoutes(indexManager) {
       if (!symbol) {
         return res.status(400).json({
           error: 'Missing symbol',
-          message: 'Symbol parameter is required'
+          message: 'Symbol parameter is required',
+          request_id: req.id
         });
       }
       
@@ -91,7 +95,8 @@ export default function createIndicesRoutes(indexManager) {
       if (!indexData) {
         return res.status(404).json({
           error: 'Index not found',
-          message: `Index with symbol "${symbol}" not found`
+          message: `Index with symbol "${symbol}" not found`,
+          request_id: req.id
         });
       }
       
@@ -103,7 +108,8 @@ export default function createIndicesRoutes(indexManager) {
       console.error('Error in /indices/:symbol:', error);
       res.status(500).json({
         error: 'Failed to retrieve index data',
-        message: error.message
+        message: error.message,
+        request_id: req.id
       });
     }
   });
@@ -125,7 +131,8 @@ export default function createIndicesRoutes(indexManager) {
       console.error('Error in /indices/status:', error);
       res.status(500).json({
         error: 'Failed to retrieve status',
-        message: error.message
+        message: error.message,
+        request_id: req.id
       });
     }
   });

@@ -3,6 +3,9 @@ import { config } from '../../config.js';
 export class MarketDataAppProvider {
   constructor() {
     this.initialized = false;
+    this._lastCallAt = 0;
+    this._minIntervalMs = 1000;
+    this._inFlight = null;
   }
 
   async initialize() {
@@ -18,69 +21,83 @@ export class MarketDataAppProvider {
     this.initialized = true;
   }
 
+  async _throttle() {
+    const now = Date.now();
+    const wait = Math.max(0, this._minIntervalMs - (now - (this._lastCallAt || 0)));
+    if (wait > 0) {
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+
   async getMarketIndices() {
     try {
       await this.initialize();
-
-      // Use the new Rust API endpoint for indices
-      const response = await fetch(
-        `${config.API_URL}indices/all`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json'
+      if (this._inFlight) {
+        return await this._inFlight;
+      }
+      await this._throttle();
+      this._inFlight = (async () => {
+        // Use the new Rust API endpoint for indices
+        const response = await fetch(
+          `${config.API_URL}indices/all`,
+          {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json'
+            }
           }
+        );
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            throw new Error('Authentication error');
+          }
+          throw new Error(`Failed to fetch market indices: ${response.status}`);
         }
-      );
 
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Authentication error');
+        const data = await response.json();
+
+        // Log the entire response for debugging
+        console.log('Indices API Response data:', data);
+
+        if (data?.error) {
+          const errorMessage = data.error || 'Indices API returned an error';
+          const detailedMessage = data.code ? `${errorMessage} (code: ${data.code})` : errorMessage;
+          throw new Error(detailedMessage);
         }
-        throw new Error(`Failed to fetch market indices: ${response.status}`);
-      }
 
-      const data = await response.json();
+        const prices = data?.prices;
+        if (!prices || typeof prices !== 'object') {
+          throw new Error('Indices API returned no price data');
+        }
 
-      // Log the entire response for debugging
-      console.log('Indices API Response data:', data);
+        const priceEntries = Object.entries(prices);
+        if (priceEntries.length === 0) {
+          throw new Error('No indices data available');
+        }
 
-      if (data?.error) {
-        const errorMessage = data.error || 'Indices API returned an error';
-        const detailedMessage = data.code ? `${errorMessage} (code: ${data.code})` : errorMessage;
-        throw new Error(detailedMessage);
-      }
+        const validQuotes = priceEntries.map(([symbol, indexData]) => {
+          const name = indexData.additional_data?.name || symbol;
 
-      const prices = data?.prices;
-      if (!prices || typeof prices !== 'object') {
-        throw new Error('Indices API returned no price data');
-      }
+          return {
+            name: symbol,
+            value: indexData.price,
+            change: indexData.change,
+            changePercent: indexData.percent_change,
+            additionalData: indexData.additional_data
+          };
+        });
 
-      const priceEntries = Object.entries(prices);
-      if (priceEntries.length === 0) {
-        throw new Error('No indices data available');
-      }
+        if (validQuotes.length === 0) {
+          throw new Error('No valid market indices data received');
+        }
 
-      // Transform the response to match our expected format
-      const validQuotes = priceEntries.map(([symbol, indexData]) => {
-        // Extract the name from additional_data or use the symbol as fallback
-        const name = indexData.additional_data?.name || symbol;
-
-        return {
-          name: symbol, // Use the symbol as the name field (for backward compatibility)
-          value: indexData.price,
-          change: indexData.change,
-          changePercent: indexData.percent_change,
-          // Include additional data that might be useful
-          additionalData: indexData.additional_data
-        };
-      });
-
-      if (validQuotes.length === 0) {
-        throw new Error('No valid market indices data received');
-      }
-
-      return validQuotes;
+        return validQuotes;
+      })();
+      const result = await this._inFlight;
+      this._lastCallAt = Date.now();
+      this._inFlight = null;
+      return result;
     } catch (error) {
       console.error('Market indices API error:', error);
       throw error;

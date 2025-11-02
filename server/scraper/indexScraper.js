@@ -9,6 +9,9 @@ export class IndexScraper {
     this.maxScrapesBeforeRestart = 20;
     this.retryCount = 0;
     this.maxRetries = 3;
+    this.lastScrapeAt = 0;
+    this.minIntervalMs = Number(process.env.SCRAPE_MIN_INTERVAL_MS || 2000);
+    this._scraping = false;
   }
 
   /**
@@ -35,8 +38,20 @@ export class IndexScraper {
           '--disable-features=VizDisplayCompositor'
         ]
       });
+      this.browser.on('disconnected', () => {
+        console.error('🛑 Puppeteer browser disconnected');
+        this.isInitialized = false;
+      });
       
       this.page = await this.browser.newPage();
+      
+      await this.page.setDefaultNavigationTimeout(60000);
+      await this.page.setDefaultTimeout(15000);
+      this.page.on('error', err => console.error('💥 Puppeteer page crashed:', err));
+      this.page.on('pageerror', err => console.error('⚠️ Page error:', err));
+      this.page.on('requestfailed', req => {
+        console.warn('⚠️ Request failed:', req.url(), req.failure()?.errorText);
+      });
       
       // Set user agent to avoid detection
       await this.page.setUserAgent(
@@ -59,7 +74,16 @@ export class IndexScraper {
    * @param {IndexManager} indexManager - Index manager instance to update
    */
   async scrapeIndices(indexManager) {
+    if (this._scraping) {
+      return;
+    }
+    this._scraping = true;
     try {
+      const now = Date.now();
+      const elapsed = now - (this.lastScrapeAt || 0);
+      if (elapsed < this.minIntervalMs) {
+        await this.delay(this.minIntervalMs - elapsed);
+      }
       await this.initialize();
       
       console.log('📊 Scraping indices from investing.com...');

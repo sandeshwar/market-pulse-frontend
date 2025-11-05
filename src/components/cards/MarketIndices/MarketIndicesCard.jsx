@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '../../common/Card/Card.jsx';
 import { ICONS } from '../../../utils/icons.js';
 import { marketDataProvider } from '../../../services/providers/MarketDataAppProvider.js';
@@ -49,6 +49,10 @@ export const MarketIndicesCard = () => {
   const [sortDirection, setSortDirection] = useState('asc');
   const [retryCount, setRetryCount] = useState(0);
   const [userIndices, setUserIndices] = useState([]);
+  const [changedIndices, setChangedIndices] = useState(new Set());
+  
+  // Track previous values to detect changes
+  const prevValuesRef = useRef({});
 
   // Define sort fields
   const sortFields = [
@@ -134,6 +138,27 @@ export const MarketIndicesCard = () => {
         // Log the indices data for debugging
         console.log('Market indices data to display:', 
           indicesToShow.map(idx => `${idx.name}: ${idx.value}`).join(', '));
+        
+        // Detect value changes and trigger animations
+        const newChangedIndices = new Set();
+        indicesToShow.forEach(index => {
+          const prevValue = prevValuesRef.current[index.name];
+          if (prevValue !== undefined && prevValue !== index.value) {
+            newChangedIndices.add(index.name);
+            console.log(`Value changed for ${index.name}: ${prevValue} → ${index.value}`);
+          }
+          // Update previous values
+          prevValuesRef.current[index.name] = index.value;
+        });
+        
+        // Update changed indices state
+        if (newChangedIndices.size > 0) {
+          setChangedIndices(newChangedIndices);
+          // Clear animations after they complete
+          setTimeout(() => {
+            setChangedIndices(new Set());
+          }, 800);
+        }
         
         // Create a new array to ensure state update
         setIndices([...indicesToShow]);
@@ -324,10 +349,16 @@ export const MarketIndicesCard = () => {
           const changeClass = isPositive ? 'positive' : 'negative';
           const marketId = getMarketId(index.name);
           
+          // Check if this index value changed
+          const hasChanged = changedIndices.has(index.name);
+          const prevValue = prevValuesRef.current[index.name];
+          const valueIncreased = hasChanged && prevValue !== undefined && index.value > prevValue;
+          const valueDecreased = hasChanged && prevValue !== undefined && index.value < prevValue;
+          
           return (
             <div 
               key={index.name || i} 
-              className={`index-item ${changeClass}`}
+              className={`index-item ${changeClass} ${hasChanged ? 'value-changed' : ''}`}
               data-index={index.name}
             >
               {/* Market Status Indicator */}
@@ -339,8 +370,10 @@ export const MarketIndicesCard = () => {
                   <div className="index-name">
                     {index.name || 'Unknown'}
                   </div>
-                  <div className="index-value">{(index.value || 0).toFixed(2)}</div>
-                  <div className={`index-change ${changeClass}`}>
+                  <div className={`index-value ${valueIncreased ? 'value-increased' : ''} ${valueDecreased ? 'value-decreased' : ''}`}>
+                    {(index.value || 0).toFixed(2)}
+                  </div>
+                  <div className={`index-change ${changeClass} ${hasChanged ? 'change-updated' : ''}`}>
                     {isPositive ? '+' : ''}{(index.change || 0).toFixed(2)} ({(index.changePercent || 0).toFixed(2)}%)
                   </div>
                 </div>

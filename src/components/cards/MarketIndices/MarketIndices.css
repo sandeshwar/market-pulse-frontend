@@ -11,8 +11,25 @@
   border-radius: var(--border-radius-sm);
   background-color: var(--bg-primary);
   height: 100px; /* Fixed height for consistent flipping */
-  transition: box-shadow 0.3s ease, transform 0.2s ease;
+  transition: box-shadow 0.3s ease, transform 0.2s ease, background-color 0.3s ease;
   overflow: hidden;
+}
+
+/* Value change animations */
+.index-item.value-changed {
+  animation: valueChangeFlash 0.8s ease-out;
+}
+
+@keyframes valueChangeFlash {
+  0% {
+    background-color: var(--bg-primary);
+  }
+  25% {
+    background-color: rgba(59, 130, 246, 0.15);
+  }
+  100% {
+    background-color: var(--bg-primary);
+  }
 }
 
 /* Colored corner indicators for positive/negative change */
@@ -87,11 +104,72 @@
 .index-value {
   font-size: 16px;
   font-weight: 500;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Value increased animation */
+.index-value.value-increased {
+  animation: valueIncreased 0.6s ease-out;
+}
+
+@keyframes valueIncreased {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.95);
+    color: var(--accent-positive, #10b981);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    color: inherit;
+  }
+}
+
+/* Value decreased animation */
+.index-value.value-decreased {
+  animation: valueDecreased 0.6s ease-out;
+}
+
+@keyframes valueDecreased {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.95);
+    color: var(--accent-negative, #ef4444);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    color: inherit;
+  }
 }
 
 .index-change {
   font-size: 12px;
   margin-top: var(--spacing-xs);
+  transition: opacity 0.3s ease;
+}
+
+/* Change value animation */
+.index-change.change-updated {
+  animation: fadeInOut 0.5s ease-out;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .index-details {

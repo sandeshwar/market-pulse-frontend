@@ -70,6 +70,7 @@ export class IndexScraper {
    */
   async scrapeIndices(indexManager) {
     if (this._scraping) {
+      console.log('⏭️  Scrape already in progress, skipping...');
       return;
     }
     this._scraping = true;
@@ -328,6 +329,10 @@ export class IndexScraper {
       
       indexManager.markScrapeFailed(error);
       throw error;
+    } finally {
+      // Always reset the scraping flag
+      this._scraping = false;
+      this.lastScrapeAt = Date.now();
     }
   }
 

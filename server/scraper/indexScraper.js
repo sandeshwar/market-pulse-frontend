@@ -50,10 +50,52 @@ export class IndexScraper {
         viewport: { width: 1920, height: 1080 }
       });
       
-      await this.page.setDefaultTimeout(60000);
+      // Block ads and tracking scripts to speed up page load
+      await this.page.route('**/*', (route) => {
+        const url = route.request().url();
+        const resourceType = route.request().resourceType();
+        
+        // Block ads, analytics, and unnecessary resources
+        const blockedDomains = [
+          'doubleclick.net',
+          'googlesyndication.com',
+          'googletagmanager.com',
+          'google-analytics.com',
+          'adnxs.com',
+          'pubmatic.com',
+          'casalemedia.com',
+          'richaudience.com',
+          'seedtag.com',
+          'nexx360.io',
+          'ingage.tech',
+          'media.net',
+          'sparteo.com',
+          'bqstreamer.com',
+          '3lift.com',
+          '4dex.io'
+        ];
+        
+        const shouldBlock = blockedDomains.some(domain => url.includes(domain)) ||
+                           resourceType === 'image' ||
+                           resourceType === 'font' ||
+                           resourceType === 'media';
+        
+        if (shouldBlock) {
+          route.abort();
+        } else {
+          route.continue();
+        }
+      });
+      
+      await this.page.setDefaultTimeout(30000); // Reduced timeout
       this.page.on('pageerror', err => console.error('⚠️ Playwright page error:', err));
+      // Reduce noise - only log critical request failures
       this.page.on('requestfailed', req => {
-        console.error('❌ Request failed:', req.url(), req.failure());
+        const url = req.url();
+        // Only log if it's the main page or data endpoints
+        if (url.includes('investing.com') && !url.includes('gcode') && !url.includes('tag/js')) {
+          console.error('❌ Critical request failed:', url, req.failure());
+        }
       });
       
       this.isInitialized = true;
@@ -86,16 +128,14 @@ export class IndexScraper {
       
       // Navigate to the indices page
       await this.page.goto('https://in.investing.com/indices/major-indices', {
-        waitUntil: 'domcontentloaded', // Faster and more reliable than networkidle2
-        timeout: 60000 // Increased timeout to 60 seconds
+        waitUntil: 'domcontentloaded', // Don't wait for all resources
+        timeout: 30000 // Reduced timeout
       });
 
-      // Take screenshot for debugging immediately after page load
-      await this.takeScreenshot('debug-page-loaded.png');
-      console.log('📸 Screenshot saved after page load');
+      console.log('✅ Page loaded, waiting for table...');
 
-      // Wait a bit for dynamic content to load
-      await this.delay(3000);
+      // Wait a bit for dynamic content to load (reduced from 3s to 2s)
+      await this.delay(2000);
 
       // Try multiple selector strategies - prioritize stable selectors without CSS module hashes
       const selectors = [

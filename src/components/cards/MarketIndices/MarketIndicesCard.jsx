@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '../../common/Card/Card.jsx';
 import { ICONS } from '../../../utils/icons.js';
 import { marketDataProvider } from '../../../services/providers/MarketDataAppProvider.js';
@@ -47,10 +47,8 @@ export const MarketIndicesCard = () => {
   const [error, setError] = useState(null);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [flippedIndices, setFlippedIndices] = useState({});
   const [retryCount, setRetryCount] = useState(0);
   const [userIndices, setUserIndices] = useState([]);
-  const flipIntervalsRef = useRef([]);
 
   // Define sort fields
   const sortFields = [
@@ -174,58 +172,7 @@ export const MarketIndicesCard = () => {
       }, RETRY_DELAY);
     }
   };
-
-  // Set up automatic flipping animation
-  useEffect(() => {
-    if (indices.length === 0 || loading) return;
-
-    // Clear any existing flip timeouts
-    flipIntervalsRef.current.forEach(interval => clearTimeout(interval));
-    flipIntervalsRef.current = [];
-
-    // Set up automatic flipping for each index item with a staggered start
-    indices.forEach((index, i) => {
-      // Calculate delays based on index for a wave effect
-      const startDelay = 2000 + (i * 800); // Initial delay plus stagger
-      const flipDuration = 5000; // How long to show each side
-      const cycleTime = 10000; // Total time for a complete flip cycle
-
-      // Function to handle the flip cycle
-      const flipCycle = () => {
-        // Use a callback to ensure we're working with the latest state
-        setFlippedIndices(prev => {
-          const newState = { ...prev };
-          newState[index.name] = !newState[index.name];
-          
-          // Store the current state for this index to use in the timeout calculation
-          const isCurrentlyFlipped = newState[index.name];
-          
-          // Schedule next flip based on the current state we just set
-          // This avoids the race condition by not relying on the flippedIndices state variable
-          const timeoutId = setTimeout(
-            flipCycle, 
-            isCurrentlyFlipped ? flipDuration : (cycleTime - flipDuration)
-          );
-          
-          // Add the timeout ID to our ref for cleanup
-          flipIntervalsRef.current.push(timeoutId);
-          
-          return newState;
-        });
-      };
-
-      // Start the flip cycle after initial delay
-      const initialTimeoutId = setTimeout(flipCycle, startDelay);
-      flipIntervalsRef.current.push(initialTimeoutId);
-    });
-
-    // Cleanup function
-    return () => {
-      flipIntervalsRef.current.forEach(interval => clearTimeout(interval));
-      flipIntervalsRef.current = [];
-    };
-  }, [indices, loading]);
-
+  
   // Handle watchlist updates
   const handleWatchlistUpdate = (updatedWatchlists) => {
     console.log('Indices watchlist updated, refreshing display immediately', 
@@ -294,8 +241,6 @@ export const MarketIndicesCard = () => {
       console.log('MarketIndicesCard component unmounting');
       clearInterval(refreshInterval);
       indicesWatchlistService.removeListener(handleWatchlistUpdate);
-      // Also clear any flip timeouts
-      flipIntervalsRef.current.forEach(interval => clearTimeout(interval));
     };
   }, []);
 
@@ -304,15 +249,7 @@ export const MarketIndicesCard = () => {
     setSortField(field);
     setSortDirection(direction);
   };
-
-  // Handle manual flip toggle
-  const handleFlipToggle = (indexName) => {
-    setFlippedIndices(prev => ({
-      ...prev,
-      [indexName]: !prev[indexName]
-    }));
-  };
-
+  
   // Get sorted indices data
   const getSortedIndices = () => {
     if (!indices || indices.length === 0) return [];
@@ -386,26 +323,11 @@ export const MarketIndicesCard = () => {
           const isPositive = index.change >= 0;
           const changeClass = isPositive ? 'positive' : 'negative';
           const marketId = getMarketId(index.name);
-          const isFlipped = flippedIndices[index.name] || false;
-          
-          // Get additional data
-          const additionalData = index.additionalData || {};
-          const highPrice = additionalData.highPrice ? 
-            `H: ${parseFloat(additionalData.highPrice).toFixed(2)} ↑` : '';
-          const lowPrice = additionalData.lowPrice ? 
-            `L: ${parseFloat(additionalData.lowPrice).toFixed(2)} ↓` : '';
-          const currency = additionalData.currency || '';
-          
-          // Get technical rating if available
-          const technicalRating = additionalData.technicalRating || '';
-          const ratingClass = technicalRating.toLowerCase().includes('buy') ? 'positive' :
-                            technicalRating.toLowerCase().includes('sell') ? 'negative' : '';
           
           return (
             <div 
               key={index.name || i} 
-              className={`index-item ${changeClass} ${isFlipped ? 'flipping' : ''}`}
-              onClick={() => handleFlipToggle(index.name)}
+              className={`index-item ${changeClass}`}
               data-index={index.name}
             >
               {/* Market Status Indicator */}
@@ -421,25 +343,6 @@ export const MarketIndicesCard = () => {
                   <div className={`index-change ${changeClass}`}>
                     {isPositive ? '+' : ''}{(index.change || 0).toFixed(2)} ({(index.changePercent || 0).toFixed(2)}%)
                   </div>
-                </div>
-                
-                {/* Back Face */}
-                <div className="index-face index-face-back">
-                  <div className="index-name">
-                    {index.name || 'Unknown'}
-                  </div>
-                  
-                  <div className="index-details">
-                    {highPrice && <div className="index-high-low high-value">{highPrice}</div>}
-                    {lowPrice && <div className="index-high-low low-value">{lowPrice}</div>}
-                    {technicalRating && (
-                      <div className={`index-rating ${ratingClass}`}>{technicalRating}</div>
-                    )}
-                  </div>
-                  
-                  {currency && 
-                    <div className="index-currency">{getCurrencySymbol(currency)}</div>
-                  }
                 </div>
               </div>
             </div>

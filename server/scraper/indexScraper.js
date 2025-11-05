@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import { chromium } from 'playwright';
 
 export class IndexScraper {
   constructor() {
@@ -15,56 +15,51 @@ export class IndexScraper {
   }
 
   /**
-   * Initialize Puppeteer browser
+   * Initialize Playwright browser
    */
   async initialize() {
     if (this.isInitialized) return;
 
     try {
-      console.log('🌐 Initializing Puppeteer browser...');
-      this.browser = await puppeteer.launch({
-        headless: 'new',
+      console.log('🚀 Launching Playwright browser...');
+      this.browser = await chromium.launch({
+        headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
           '--disable-gpu',
-          '--disable-features=RendererCodeIntegrity', // macOS ARM compatibility fix
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor'
+          '--disable-extensions',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-features=TranslateUI',
+          '--disable-ipc-flooding-protection',
+          '--enable-features=NetworkService',
+          '--disable-background-networking'
         ]
       });
       this.browser.on('disconnected', () => {
-        console.error('🛑 Puppeteer browser disconnected');
+        console.error('🛑 Playwright browser disconnected');
         this.isInitialized = false;
       });
       
-      this.page = await this.browser.newPage();
-      
-      await this.page.setDefaultNavigationTimeout(60000);
-      await this.page.setDefaultTimeout(15000);
-      this.page.on('error', err => console.error('💥 Puppeteer page crashed:', err));
-      this.page.on('pageerror', err => console.error('⚠️ Page error:', err));
-      this.page.on('requestfailed', req => {
-        console.warn('⚠️ Request failed:', req.url(), req.failure()?.errorText);
+      this.page = await this.browser.newPage({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        viewport: { width: 1920, height: 1080 }
       });
       
-      // Set user agent to avoid detection
-      await this.page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      );
-      
-      // Set viewport
-      await this.page.setViewport({ width: 1920, height: 1080 });
+      await this.page.setDefaultTimeout(60000);
+      this.page.on('pageerror', err => console.error('⚠️ Playwright page error:', err));
+      this.page.on('requestfailed', req => {
+        console.error('❌ Request failed:', req.url(), req.failure());
+      });
       
       this.isInitialized = true;
-      console.log('✅ Puppeteer browser initialized');
+      console.log('✅ Playwright browser initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize Puppeteer:', error);
+      console.error('❌ Failed to initialize Playwright:', error);
       throw error;
     }
   }
@@ -101,13 +96,14 @@ export class IndexScraper {
       // Wait a bit for dynamic content to load
       await this.delay(3000);
 
-      // Try multiple selector strategies
+      // Try multiple selector strategies - prioritize stable selectors without CSS module hashes
       const selectors = [
-        'table[data-test="instrument-table"] tbody tr',
-        'table tbody tr',
-        '.genTbl tbody tr',
-        '[data-test="instrument-table"] tbody tr',
-        'table[aria-label*="Indices"] tbody tr'
+        'table tbody tr',                    // Most stable, generic table selector
+        '[data-test="instrument-table"] tbody tr',  // Data-test attribute if available
+        '.genTbl tbody tr',                  // Legacy class name
+        'table[aria-label*="Indices"] tbody tr',   // Aria label selector
+        '[data-test="dynamic-table"] tbody tr',    // Dynamic table data-test
+        'tbody.datatable-v2_body__8TXQk tr'       // CSS module class - last resort
       ];
 
       let indicesData = [];
@@ -122,71 +118,154 @@ export class IndexScraper {
             timeout: 5000
           });
 
-          // Extract data using this selector
+          // Extract data using this selector with new HTML structure
           indicesData = await this.page.evaluate((sel) => {
             const rows = document.querySelectorAll(sel);
             const indices = [];
 
+            // Symbol mapping from display names to internal symbols
+            const nameToSymbolMap = {
+              'Nifty 50': 'NIFTY',
+              'BSE Sensex': 'SENSEX', 
+              'Nifty Bank': 'BANKNIFTY',
+              'India VIX': 'INDIAVIX',
+              'Dow Jones': 'DJI',
+              'S&P 500': 'S&P-500',
+              'Nasdaq': 'IXIC',
+              'Small Cap 2000': 'RUSSELL2000',
+              'S&P 500 VIX': 'VIX',
+              'S&P/TSX': 'TSX',
+              'Bovespa': 'BOVESPA',
+              'S&P/BMV IPC': 'BMVIPC',
+              'DAX': 'DAX',
+              'FTSE 100': 'UKX',
+              'CAC 40': 'CAC-40',
+              'Euro Stoxx 50': 'EUROSTOXX50',
+              'AEX': 'AEX',
+              'IBEX 35': 'IBEX35',
+              'FTSE MIB': 'FTSEMIB',
+              'SMI': 'SMI'
+            };
+
+            // Helpers: normalize display name and produce symbol
+            const cleanDisplayName = (n) => {
+              return (n || '')
+                .replace(/[-\s]*\(CFD\)\s*$/i, '') // Remove " - (CFD)" suffix
+                .replace(/\s*Futures\s*$/i, '') // Remove trailing "Futures"
+                .replace(/\s*Index\s*$/i, '') // Remove trailing "Index"
+                .replace(/\s+/g, ' ') // collapse whitespace
+                .trim();
+            };
+
+            const toSymbol = (n) => {
+              return (n || '')
+                .replace(/[^a-zA-Z0-9&]/g, '-') // keep '&', dash others
+                .replace(/-+/g, '-') // collapse multiple dashes
+                .replace(/^-|-$/g, '') // trim edge dashes
+                .toUpperCase();
+            };
+
+            // Track duplicates after normalization/mapping
+            const seenSymbols = new Set();
+
             rows.forEach((row, index) => {
               try {
                 const cells = row.querySelectorAll('td');
-                if (cells.length >= 3) {
-                  // Try multiple approaches to extract data
-                  let symbol = '';
+                if (cells.length >= 7) {
+                  // Extract data based on new table structure
+                  // Column order: checkbox, Name, Last, High, Low, Chg., Chg. %, Time
+                  
                   let name = '';
                   let price = 0;
                   let change = 0;
                   let percentChange = 0;
+                  let highPrice = 0;
+                  let lowPrice = 0;
                   let exchange = 'Unknown';
+                  let lastUpdated = Date.now();
 
-                  // Extract symbol (usually in second cell or first link)
+                  // Extract name from the link's title attribute in second cell
                   if (cells[1]) {
                     const link = cells[1].querySelector('a');
-                    symbol = link?.textContent?.trim() || cells[1].textContent?.trim() || '';
-                  } else if (cells[0]) {
-                    const link = cells[0].querySelector('a');
-                    symbol = link?.textContent?.trim() || cells[0].textContent?.trim() || '';
+                    name = link?.getAttribute('title')?.trim() || 
+                           link?.textContent?.trim() || 
+                           cells[1].textContent?.trim() || '';
                   }
 
-                  // Extract name (usually in first cell)
-                  if (cells[0]) {
-                    name = cells[0].textContent?.trim() || symbol;
+                  // Extract price from third cell (Last)
+                  if (cells[2]) {
+                    const priceText = cells[2].textContent?.trim() || '';
+                    price = parseFloat(priceText.replace(/[,]/g, '')) || 0;
                   }
 
-                  // Extract price (look for numeric values in cells)
-                  for (let i = 2; i < cells.length; i++) {
-                    const priceText = cells[i].textContent?.trim() || '';
-                    const priceNum = parseFloat(priceText.replace(/[,]/g, ''));
-                    if (!isNaN(priceNum) && priceNum > 0) {
-                      price = priceNum;
-                      
-                      // Try to get change and percent change from adjacent cells
-                      if (i + 1 < cells.length) {
-                        const changeText = cells[i + 1].textContent?.trim() || '';
-                        change = parseFloat(changeText.replace(/[,]/g, '')) || 0;
+                  // Extract high and low prices
+                  if (cells[3]) {
+                    const highText = cells[3].textContent?.trim() || '';
+                    highPrice = parseFloat(highText.replace(/[,]/g, '')) || 0;
+                  }
+                  
+                  if (cells[4]) {
+                    const lowText = cells[4].textContent?.trim() || '';
+                    lowPrice = parseFloat(lowText.replace(/[,]/g, '')) || 0;
+                  }
+
+                  // Extract change from fifth cell
+                  if (cells[5]) {
+                    const changeText = cells[5].textContent?.trim() || '';
+                    change = parseFloat(changeText.replace(/[,]/g, '')) || 0;
+                  }
+
+                  // Extract percent change from sixth cell
+                  if (cells[6]) {
+                    const percentText = cells[6].textContent?.trim() || '';
+                    percentChange = parseFloat(percentText.replace(/[%,]/g, '')) || 0;
+                  }
+
+                  // Extract time from seventh cell
+                  if (cells[7]) {
+                    const timeElement = cells[7].querySelector('time');
+                    if (timeElement) {
+                      const timeStr = timeElement.getAttribute('datetime');
+                      if (timeStr) {
+                        // Parse time like "15:29:59" or "21:27:07"
+                        const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+                        const now = new Date();
+                        now.setHours(hours, minutes, seconds || 0, 0);
+                        lastUpdated = now.getTime();
                       }
-                      if (i + 2 < cells.length) {
-                        const percentText = cells[i + 2].textContent?.trim() || '';
-                        percentChange = parseFloat(percentText.replace(/[%,]/g, '')) || 0;
-                      }
-                      break;
                     }
                   }
 
-                  // Extract exchange from last cells if available
-                  if (cells.length >= 6) {
-                    exchange = cells[cells.length - 1].textContent?.trim() || 'Unknown';
-                  }
+                  // Map display name to internal symbol with improved normalization
+                  const baseName = cleanDisplayName(name);
+                  let symbol = nameToSymbolMap[baseName] || toSymbol(baseName);
 
-                  if (symbol && !isNaN(price) && price > 0) {
-                    indices.push({
-                      symbol: symbol.replaceAll('.', '-'), // Replace all dots with dashes
-                      name: name || symbol,
-                      price,
-                      change,
-                      percent_change: percentChange,
-                      exchange
-                    });
+                  // Data validation - ensure reasonable market values
+                  const isValidPrice = price > 0 && price < 1000000; // Most indices won't exceed 1M
+                  const isValidChange = Math.abs(change) < price * 0.5; // Change shouldn't be more than 50% of price
+                  const isValidPercent = Math.abs(percentChange) < 50; // Percent change shouldn't exceed 50%
+                  const hasValidName = name && name.length > 0 && name.length < 100;
+
+                  if (name && !isNaN(price) && isValidPrice && isValidChange && isValidPercent && hasValidName) {
+                    if (!seenSymbols.has(symbol)) {
+                      indices.push({
+                        symbol,
+                        name: baseName,
+                        price,
+                        change,
+                        percent_change: percentChange,
+                        exchange,
+                        additional_data: {
+                          highPrice,
+                          lowPrice,
+                          lastUpdated,
+                          exchange
+                        }
+                      });
+                      seenSymbols.add(symbol);
+                    }
+                  } else {
+                    console.warn(`⚠️  Invalid data filtered out: ${name} - Price: ${price}, Change: ${change}, Percent: ${percentChange}`);
                   }
                 }
               } catch (error) {

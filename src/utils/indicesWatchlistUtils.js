@@ -3,13 +3,14 @@ import { indicesWatchlistService } from '../services/indicesWatchlistService.js'
 // Default indices watchlist name - we'll only use one watchlist
 export const DEFAULT_INDICES_WATCHLIST_NAME = 'My Indices Watchlist';
 
-// Default indices to include for all users
+// Default indices to include for all users - updated to match new scraper symbol mappings
 export const DEFAULT_INDICES = [
-  'DJI',    // Dow Jones Industrial Average (NYSE)
-  'IXIC',   // NASDAQ Composite
-  'SENSEX',   // SENSEX (India)
-  '399001',   // SZSE Component Index (China)
-  'UKX'    // FTSE 100 (UK)
+  'NIFTY',      // Nifty 50 (India)
+  'SENSEX',    // BSE Sensex (India)
+  'DJI',       // Dow Jones Industrial Average (US)
+  'S&P-500',   // S&P 500 (US)
+  'IXIC',      // NASDAQ Composite (US)
+  'UKX'        // FTSE 100 (UK)
 ];
 
 /**

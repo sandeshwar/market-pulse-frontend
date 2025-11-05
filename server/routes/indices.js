@@ -24,6 +24,15 @@ export default function createIndicesRoutes(indexManager) {
         'Content-Type': 'application/json'
       });
       
+      // Check if we have any live data
+      if (!data?.metadata || data.metadata.count === 0) {
+        return res.status(503).json({
+          error: 'Live data unavailable',
+          message: 'Unable to fetch market data at this time. Please try again later.',
+          request_id: req.id
+        });
+      }
+      
       // If data is stale, add warning header
       if (indexManager.isDataStale()) {
         res.set('X-Data-Status', 'stale');

@@ -6,8 +6,7 @@ Backend API for Market Pulse - Indices watchlist and data scraping service.
 
 - **Express server** on port 3001 with Chrome extension CORS support
 - **Memory storage** for real-time indices data
-- **Puppeteer scraper** for investing.com with fallback selectors
-- **Seed data** with 15 major global indices for reliability
+- **Playwright scraper** for investing.com with fallback selectors
 - **Comprehensive API endpoints** matching frontend requirements
 - **Robust error handling** with exponential backoff and retry logic
 
@@ -120,17 +119,8 @@ Get specific index data by symbol.
 
 ## Data Sources
 
-### Seed Data
-The server loads static data for 15 major global indices on startup from `seedData.json`. This ensures the API works immediately even if scraping fails.
-
-**Available indices:**
-- S&P 500, NASDAQ 100, Dow Jones (US)
-- FTSE 100, DAX, CAC 40 (Europe)
-- Nikkei 225, Shanghai Composite, Hang Seng (Asia)
-- And more...
-
 ### Web Scraping
-The scraper attempts to fetch real-time data from https://in.investing.com/indices/major-indices every 90 seconds.
+The scraper fetches real-time data from https://in.investing.com/indices/major-indices at a configurable interval via `SCRAPE_INTERVAL_MS` (default: 15000 ms).
 
 **Features:**
 - Multiple selector strategies with fallbacks
@@ -140,8 +130,7 @@ The scraper attempts to fetch real-time data from https://in.investing.com/indic
 
 ## Known Issues
 
-- **Puppeteer crashes** on macOS ARM due to compatibility issues with version 21.11.0
-- **Scraping may fail** but seed data provides reliable fallback
+- **Playwright may crash** on some systems; ensure the environment supports headless Chromium
 - **Background retries** continue but don't affect API functionality
 
 ## Development
@@ -152,6 +141,7 @@ The scraper attempts to fetch real-time data from https://in.investing.com/indic
 
 ### Environment Variables
 - `PORT` - Server port (default: 3001)
+- `SCRAPE_INTERVAL_MS` - Scrape interval in milliseconds (default: 15000)
 
 ### Logging
 - All logs output to console
@@ -166,12 +156,10 @@ The scraper attempts to fetch real-time data from https://in.investing.com/indic
 
 **API returns empty data:**
 - Check health endpoint for scraper status
-- Seed data should load automatically on startup
-- Restart server if seed data failed to load
+- Wait for the first scrape to complete (up to `SCRAPE_INTERVAL_MS`) or reduce the interval via `SCRAPE_INTERVAL_MS`
 
 **Scraping issues:**
-- Puppeteer may crash on some systems (especially macOS ARM)
-- API continues working with seed data
+- Playwright may crash on some systems (especially macOS ARM)
 - Screenshots saved as `debug-*.png` for analysis
 
 **CORS errors:**
@@ -184,10 +172,9 @@ The scraper attempts to fetch real-time data from https://in.investing.com/indic
 server/
 ├── server.js              # Main Express server
 ├── package.json           # Dependencies and scripts
-├── seedData.json          # Static indices data
 ├── scraper/
 │   ├── indexManager.js    # Data storage and management
-│   └── indexScraper.js    # Puppeteer web scraper
+│   └── indexScraper.js    # Playwright web scraper
 └── routes/
     └── indices.js         # API route handlers
 ```
@@ -195,7 +182,7 @@ server/
 ## Next Steps
 
 1. **Frontend Integration** - Connect Chrome extension to backend API
-2. **Fix Scraping** - Update Puppeteer version or switch to axios/cheerio
+2. **Fix Scraping** - Update Playwright version or switch to axios/cheerio
 3. **Add Rate Limiting** - Prevent API abuse
 4. **File Logging** - Persist logs for debugging
 5. **Data Validation** - Add input validation and error handling
